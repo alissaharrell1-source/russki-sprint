@@ -1,0 +1,19 @@
+{
+  "name": "Русский Sprint",
+  "short_name": "Русский Sprint",
+  "description": "Active Russian learning with retrieval, reading, grammar, and real-world listening.",
+  "lang": "en",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbf8f2",
+  "theme_color": "#194d3d",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
