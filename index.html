@@ -222,6 +222,17 @@
     .status-dot.new { background:#ffe4dc; color:#984c3b; }
     .add-word { display:flex; gap:8px; margin-top:14px; }
     .add-word input { min-width:0; flex:1; border:1px solid var(--line); background:#fffdf9; border-radius:10px; padding:10px; }
+    .add-word-panel { margin-top:18px; background:#fffaf4; border-color:#dec9b7; }
+    .add-word-panel h3 { margin:7px 0 4px; }
+    .add-word-panel p { color:var(--muted); margin:0; line-height:1.45; font-size:13px; }
+    .word-practice-panel { margin-top:18px; background:linear-gradient(135deg,#f4f7ff,#ffffff); border-color:#cbd8ee; }
+    .word-practice-grid { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:18px; align-items:end; }
+    .word-practice-prompt { font-size:25px; font-weight:850; letter-spacing:-.03em; margin-top:8px; }
+    .word-practice-meta { color:var(--muted); font-size:13px; line-height:1.45; margin-top:7px; }
+    .word-practice-input { width:100%; margin-top:14px; border:1px solid #cbd8ee; background:#fff; border-radius:12px; padding:13px 14px; color:var(--ink); font:inherit; outline:none; }
+    .word-practice-input:focus { border-color:#0039a6; box-shadow:0 0 0 3px #dfe8fb; }
+    .word-practice-actions { display:flex; gap:9px; flex-wrap:wrap; margin-top:12px; }
+    .word-practice-feedback { min-height:24px; margin-top:12px; font-weight:700; color:var(--green); }
     .science-note { background:#f3efff; border-color:#ded8f4; }
     .triage-card { max-width:720px; margin:0 auto; text-align:center; background:var(--green); color:#fff; border-radius:24px; padding:34px 28px; }
     .triage-card .eyebrow { color:#e7b6c1; }
@@ -314,7 +325,7 @@
     @media (max-width: 700px) { .cefr-header { display:block; } .cefr-badge { display:inline-block; margin-top:14px; } .cefr-levels span { font-size:9px; } .cefr-caption { display:block; line-height:1.5; } .skill-level-grid { grid-template-columns:repeat(2,1fr); } .skill-level-card { padding:13px 11px; } .skill-level-icon { width:32px; height:32px; } .skill-level-card strong { font-size:20px; } .analytics-grid { grid-template-columns:1fr; } }
     .mobile-nav { display:none; }
     @media (max-width: 980px) { .reading-layout, .grammar-layout { grid-template-columns:1fr; } }
-    @media (max-width: 700px) { .clip-grid { grid-template-columns:1fr; } .drill-row { flex-wrap:wrap; } .drill-row input { flex-basis:100%; } .passage-text { font-size:20px; } .vocab-overview { gap:7px; } .vocab-stat { padding:12px 10px; } .vocab-stat b { font-size:22px; } .vocab-stat small { font-size:10px; } .vocab-list { grid-template-columns:1fr; max-height:none; } .next-word { min-height:250px; } }
+    @media (max-width: 700px) { .clip-grid { grid-template-columns:1fr; } .drill-row { flex-wrap:wrap; } .drill-row input { flex-basis:100%; } .passage-text { font-size:20px; } .vocab-overview { gap:7px; } .vocab-stat { padding:12px 10px; } .vocab-stat b { font-size:22px; } .vocab-stat small { font-size:10px; } .vocab-list { grid-template-columns:1fr; max-height:none; } .next-word { min-height:250px; } .word-practice-grid { grid-template-columns:1fr; } .word-practice-prompt { font-size:22px; } .add-word { flex-wrap:wrap; } .add-word input { flex-basis:100%; } }
     .toast { position:fixed; bottom:24px; left:50%; transform:translate(-50%, 120px); background:var(--green); color:#fff; border-radius:999px; padding:11px 17px; font-size:13px; font-weight:700; transition:.3s; box-shadow:var(--shadow); z-index:5; }
     .toast.show { transform:translate(-50%, 0); }
     @media (max-width: 980px) { .app-shell { grid-template-columns: 205px 1fr; } .main { padding:25px; } .hero-grid, .lesson-grid, .library, .progress-layout { grid-template-columns:1fr; } }
@@ -498,12 +509,64 @@
     const requestedVocabulary=Array.isArray(window.REQUESTED_VOCABULARY)?window.REQUESTED_VOCABULARY:[];
     const core1000Vocabulary=Array.isArray(window.CORE1000_VOCABULARY)?window.CORE1000_VOCABULARY:[];
     const vocabularyKey=word=>word.trim().toLowerCase().replace(/[.,!?;:()]/g,'').replace(/\s*(?:\/|—|–)\s*/g,' / ').split(' / ').map(part=>part.trim()).filter(Boolean).sort().join(' / ');
-    const mergedVocabulary=[...ra1Vocabulary,...olgaVocabulary,...olgaPhrases,...supplementalVocabulary,...requestedVocabulary,...core1000Vocabulary].map(item=>item&&item.word&&item.word.trim().toLowerCase()==='тулетная бумага'?{...item,word:'туалетная бумага'}:item);
-    const initialVocabulary=mergedVocabulary.filter((item,index,all)=>item&&item.word&&index===all.findIndex(other=>vocabularyKey(other.word)===vocabularyKey(item.word)));
-    const vocabularyResetVersion='ra1-plus-olga-ra2-vocabblaster-core1000-2026-10-13';
+    const definitionKey=word=>String(word||'').toLowerCase().replace(/ё/g,'е').replace(/[.,!?;:()«»"…—–-]+/g,' ').replace(/\s+/g,' ').trim();
+    const definitionFixes=new Map([
+      ['Да, пожалуйста...А...Вы откуда? Американец, да','Yes, please… Where are you from? American, right?'],
+      ['Да, я американец. Большой акцент, правда','Yes, I am American. A strong accent, right?'],
+      ['Да нет, нечего. Вы хорошо говорите по-русски','No, it is nothing. You speak Russian well.'],
+      ['Меня зовут Марк, кстати. А как Вас зовут','My name is Mark, by the way. What is your name?'],
+      ['А меня зовут Даша','My name is Dasha.'],
+      ['Очень приятно, Даша','Nice to meet you, Dasha.'],
+      ['Слушаю Вас','I am listening to you.'],
+      ['Здравствуйте. Я хочу суп и салат, пожалуйста','Hello. I want soup and salad, please.'],
+      ['А суп какой','Which soup?'],
+      ['Борщ есть','We have borscht.'],
+      ['Есть. И какой салат','We do. And which salad?'],
+      ['Что-нибудь ещё','Anything else?'],
+      ['Нет. Всё','No. That is all.'],
+      ['Вот Вам...Борщ и русский салат','Here you are: borscht and Russian salad.'],
+      ['Извините, пожалуйста...А где туалет','Excuse me, where is the restroom?'],
+      ['Ой, не знаю. Я не отсюда. Наверно в Макдоналдсе','Oh, I do not know. I am not from here. Probably at McDonald’s.'],
+      ['Здесь есть Макдоналдс','Is there a McDonald’s here?'],
+      ['Да. Он находится на Крещатике','Yes. It is on Khreshchatyk.'],
+      ['Крещатик? Это далеко','Khreshchatyk? Is that far?'],
+      ['Нет, не очень. Вам надо просто добраться до следующего','No, not very far. You just need to get to the next one.'],
+      ['перекрёстка -- видите вон там? А потом','Intersection—you see it over there? And then…'],
+      ['Извините, я плохо понимаю по-русски. Макдоналдс в ту сторону','Excuse me, I do not understand Russian well. McDonald’s is that way.'],
+      ['Да, в ту сторону','Yes, that way.'],
+      ['Ок. Спасибо','Okay. Thanks.'],
+      ['Привет Настя! Как дела','Hi, Nastya! How are things?'],
+      ['Нормально. А у тебя','Fine. And you?'],
+      ['У меня всё супер. Я занимаюсь русским каждый день','I am doing great. I study Russian every day.'],
+      ['Каждый день? Ты молодец','Every day? Good for you.'],
+      ['Кстати, Марк...у меня есть торт. Хочешь','By the way, Mark, I have cake. Do you want some?'],
+      ['Торт? Какой','Cake? What kind?'],
+      ['Вкусный...шоколадный','A tasty chocolate one.'],
+      ['Шоколадный? Ну...ок! давай! Пожалуйста','Chocolate? Well, okay! Let us do it! Please.'],
+      ['Вот тебе','Here you go.'],
+      ['Ммм...вкусно','Mmm… delicious.'],
+      ['Да, мне очень нравится. Спасибо Настя','Yes, I really like it. Thank you, Nastya.'],
+      ['встречаться….встретимся','to meet / we will meet'],
+      ['То есть…','that is; I mean'],
+      ['(по)завтракать','to have breakfast'],
+      ['(по)обедать','to have lunch'],
+      ['(по)ужинать','to have dinner'],
+      ['спрашивать – спросить','to ask / to ask (imperfective / perfective)'],
+      ['проверять — проверить','to check / to check (imperfective / perfective)'],
+      ['платить – заплатить','to pay / to pay (imperfective / perfective)'],
+      ['включать — включить','to turn on / to turn on (imperfective / perfective)'],
+      ['ноль — нуля','zero / of zero'],
+      ['менять — поменять','to change / to change (imperfective / perfective)']
+    ].map(([word,meaning])=>[definitionKey(word),meaning]));
+    const mergedVocabulary=[...ra1Vocabulary,...olgaVocabulary,...olgaPhrases,...supplementalVocabulary,...requestedVocabulary,...core1000Vocabulary].filter(item=>item&&item.word).map(item=>{const word=item.word.trim().toLowerCase()==='тулетная бумага'?'туалетная бумага':item.word; const fixed=definitionFixes.get(definitionKey(word)); const missing=item.meaning===item.source||!String(item.meaning||'').trim(); return {...item,word,meaning:fixed||(!missing?item.meaning:'Definition coming soon')};});
+    const vocabularyMap=new Map();
+    mergedVocabulary.forEach(item=>{const key=vocabularyKey(item.word),existing=vocabularyMap.get(key); if(!existing){vocabularyMap.set(key,item);return;} const preferred=existing.meaning==='Definition coming soon'&&item.meaning!=='Definition coming soon'?item.meaning:existing.meaning; vocabularyMap.set(key,{...existing,meaning:preferred,description:[existing.description,item.description].filter(Boolean).join(' · ')});});
+    const initialVocabulary=[...vocabularyMap.values()];
+    const vocabularyResetVersion='ra1-plus-olga-ra2-vocabblaster-core1000-definitions-practice-2026-10-15';
     const freshVocabulary=()=>initialVocabulary.map(item=>({...item,status:'new',exposures:0,successes:0,dueAt:Date.now()}));
+    const restoreVocabulary=oldVocabulary=>{const oldByKey=new Map((oldVocabulary||[]).filter(item=>item&&item.word).map(item=>[vocabularyKey(item.word),item])); const restored=initialVocabulary.map(base=>{const old=oldByKey.get(vocabularyKey(base.word)); return {...base,status:old?.status||'new',exposures:old?.exposures||0,successes:old?.successes||0,dueAt:old?.dueAt||Date.now(),lastMode:old?.lastMode,modeExposures:old?.modeExposures||{}};}); const seededKeys=new Set(initialVocabulary.map(item=>vocabularyKey(item.word))); const extras=(oldVocabulary||[]).filter(item=>item&&item.word&&!seededKeys.has(vocabularyKey(item.word))); return [...restored,...extras];};
     if(localStorage.getItem('russianSprintVocabularyVersion')!==vocabularyResetVersion||!Array.isArray(state.vocab)||!state.vocab.length){
-      state={...state,xp:0,correct:0,answered:0,words:0,vocab:freshVocabulary()};
+      state={...state,words:0,vocab:restoreVocabulary(state.vocab)};
       localStorage.setItem('russianSprintVocabularyVersion',vocabularyResetVersion);
     }
     state.words=state.vocab.length;
@@ -515,6 +578,14 @@
     function recordExposure(term,success,mode){ const item=ensureVocab(term); item.exposures=(item.exposures||0)+1; item.lastMode=mode; item.modeExposures=item.modeExposures||{}; item.modeExposures[mode]=(item.modeExposures[mode]||0)+1; if(success){ item.successes=(item.successes||0)+1; if(item.status==='new')item.status='somewhat'; else if(item.status==='somewhat'&&item.successes>=2)item.status='known'; const intervals=[1,3,7,14,30]; item.dueAt=Date.now()+intervals[Math.min(item.successes,intervals.length-1)]*86400000; } else { item.status='new'; item.successes=0; item.dueAt=Date.now(); } save(); renderVocabulary(); }
     function nextVocabularyItem(){ const weight={new:0,somewhat:1,known:2}; return [...state.vocab].sort((a,b)=>{const ad=(a.dueAt||0)<=Date.now()?0:1;const bd=(b.dueAt||0)<=Date.now()?0:1;return ad-bd||weight[a.status]-weight[b.status]||(a.dueAt||0)-(b.dueAt||0);})[0]||ensureVocab('мне пришлось','I had to'); }
     function renderVocabulary(){ const counts={known:0,somewhat:0,new:0}; state.vocab.forEach(item=>counts[item.status]=(counts[item.status]||0)+1); $('#knownCount').textContent=counts.known; $('#familiarCount').textContent=counts.somewhat; $('#newCount').textContent=counts.new; $('#vocabPoolCount').textContent=state.vocab.length; const visible=state.vocab.filter(item=>{const matchesStatus=vocabFilter==='all'||item.status===vocabFilter;const haystack=(item.word+' '+(item.meaning||'')+' '+(item.description||'')).toLowerCase();return matchesStatus&&(!vocabSearch||haystack.includes(vocabSearch));}); $('#vocabList').innerHTML=visible.map(item=>'<div class="vocab-item"><div><button type="button" class="vocab-word-link reading-word" data-word="'+escapeHtml(item.word)+'">'+escapeHtml(item.word)+'</button><small>'+escapeHtml([item.meaning,item.description].filter(Boolean).join(' · '))+' · '+(item.exposures||0)+' exposures</small></div><span class="status-dot '+item.status+'">'+(item.status==='somewhat'?'SOMEWHAT':item.status.toUpperCase())+'</span></div>').join(''); }
+    let wordPracticeIndex=0, wordPracticeLocked=false;
+    function practicePool(){const rank={new:0,somewhat:1,known:2};return [...state.vocab].filter(item=>item&&item.word&&item.meaning&&item.meaning!=='Definition coming soon').sort((a,b)=>rank[a.status]-rank[b.status]||(a.exposures||0)-(b.exposures||0)||(a.dueAt||0)-(b.dueAt||0));}
+    function practiceAnswers(word){const full=normalizePracticeText(word);return [full,...word.split(/\s*(?:\/|—|–)\s*/).map(part=>normalizePracticeText(part)).filter(Boolean)];}
+    function normalizePracticeText(value){return String(value||'').toLowerCase().replace(/ё/g,'е').replace(/[.,!?;:«»"()]/g,'').replace(/\s+/g,' ').trim();}
+    function renderWordPractice(){const pool=practicePool(),item=pool.length?pool[wordPracticeIndex%pool.length]:null;wordPracticeLocked=false;$('#practiceEnglish').textContent=item?item.meaning:'Add a word with an English meaning to begin.';$('#practiceMeta').textContent=item?'Status: '+(item.status==='somewhat'?'Somewhat known':item.status==='known'?'Known':'Not yet')+' · '+(item.exposures||0)+' exposures':'Your new words will appear here.';$('#practiceRussian').value='';$('#practiceFeedback').textContent='';$('#practiceAnswer').textContent='';$('#practiceAnswer').hidden=true;$('#checkWordPractice').disabled=!item;$('#showWordPracticeAnswer').disabled=!item;$('#nextWordPractice').disabled=!item;}
+    function checkWordPractice(){const pool=practicePool(),item=pool.length?pool[wordPracticeIndex%pool.length]:null;if(!item||wordPracticeLocked)return;const typed=normalizePracticeText($('#practiceRussian').value);if(!typed){$('#practiceFeedback').textContent='Type the Russian word or phrase first.';return;}wordPracticeLocked=true;const correct=practiceAnswers(item.word).includes(typed);if(correct){$('#practiceFeedback').textContent='Correct — отлично! You produced '+item.word+'.';state.xp+=10;recordExposure(item.word,true,'production');toast('+10 XP · Word retrieved.');}else{$('#practiceFeedback').textContent='Not quite. Use Show answer, then type it once more on the next card.';recordExposure(item.word,false,'production');toast('Keep going — this one will return soon.');}updateStats();}
+    function ensureWordPractice(){if($('#wordPractice'))return;const section=document.createElement('section');section.className='panel word-practice-panel';section.id='wordPractice';section.innerHTML='<div class="section-head" style="margin:0 0 15px"><div><div class="eyebrow" style="color:#0039a6">English → Russian</div><h3>Practice producing your words</h3><p style="color:var(--muted);margin:5px 0 0;line-height:1.45">Read the English meaning, then type the Russian word or phrase from memory.</p></div><span class="pill">ACTIVE RECALL</span></div><div class="word-practice-grid"><div><div class="word-practice-prompt" id="practiceEnglish">—</div><div class="word-practice-meta" id="practiceMeta"></div><input class="word-practice-input" id="practiceRussian" aria-label="Type the Russian word or phrase" placeholder="Type the Russian here…" autocomplete="off" /><div class="word-practice-feedback" id="practiceFeedback" aria-live="polite"></div><div class="word-practice-meta" id="practiceAnswer" hidden></div></div><div class="word-practice-actions"><button class="primary" id="checkWordPractice" type="button">Check</button><button class="secondary" id="showWordPracticeAnswer" type="button">Show answer</button><button class="secondary" id="nextWordPractice" type="button">Next word →</button></div></div>';const layout=document.querySelector('#vocab .vocab-layout');layout?.parentElement.insertBefore(section,layout.nextElementSibling);$('#checkWordPractice').onclick=checkWordPractice;$('#showWordPracticeAnswer').onclick=()=>{const pool=practicePool(),item=pool.length?pool[wordPracticeIndex%pool.length]:null;if(item){$('#practiceAnswer').textContent='Answer: '+item.word;$('#practiceAnswer').hidden=false;}};$('#nextWordPractice').onclick=()=>{wordPracticeIndex++;renderWordPractice();};$('#practiceRussian').onkeydown=event=>{if(event.key==='Enter')checkWordPractice();};renderWordPractice();}
+    function organizeAddWords(){const add=$('#vocab .add-word');if(!add||add.closest('.add-word-panel'))return;const panel=document.createElement('div');panel.className='panel add-word-panel';panel.innerHTML='<div class="eyebrow">Add words</div><h3>Build your own word bank</h3><p>Add a Russian word or phrase with its English meaning. It will immediately enter practice and spaced review.</p>';const layout=document.querySelector('#vocab .vocab-layout');layout?.parentElement.insertBefore(panel,layout.nextElementSibling);panel.appendChild(add);}
     document.querySelectorAll('[data-rate]').forEach(button=>button.addEventListener('click',()=>{const item=nextVocabularyItem();rateWord(item,button.dataset.rate);toast('Saved: '+item.word+' · '+button.dataset.rate); }));
     document.querySelectorAll('.vocab-filter').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.vocab-filter').forEach(b=>b.classList.remove('active'));button.classList.add('active');vocabFilter=button.dataset.filter;renderVocabulary();}));
     $('#vocabSearch').addEventListener('input',()=>{vocabSearch=$('#vocabSearch').value.trim().toLowerCase();renderVocabulary();});
@@ -640,7 +711,7 @@
     function addNumbersLesson(){const grid=document.querySelector('#lessons .lesson-video-grid');if(!grid||grid.querySelector('[data-lesson="numbers"]'))return;const card=document.createElement('article');card.className='lesson-video-card';card.innerHTML='<div class="lesson-video-thumb">123</div><div class="lesson-video-body"><strong>Russian numbers: 1–100</strong><p>Learn cardinal numbers, gender agreement, and the noun patterns after 1, 2–4, and 5+.</p><div class="lesson-video-example">два билета · пять билетов</div><div class="lesson-video-actions"><a href="https://www.youtube.com/results?search_query=Russian+numbers+gender+cases+1+2+3+4+5" target="_blank" rel="noopener">Watch lesson ↗</a><button type="button" data-lesson="numbers">Mark watched</button></div></div>';grid.appendChild(card);card.querySelector('[data-lesson]').onclick=button=>{if(button.target.classList.contains('lesson-watched'))return;button.target.textContent='Watched ✓';button.target.classList.add('lesson-watched');state.xp+=5;save();updateStats();toast('+5 XP · Numbers lesson logged.');};}
     function ensureNotesSection(){if($('#notes'))return;const lessons=$('#lessons');if(!lessons)return;const section=document.createElement('section');section.className='view';section.id='notes';section.innerHTML='<div class="section-head" style="margin-top:0"><div><div class="eyebrow">Reference notes</div><h2>Russian forms at a glance</h2><p>Keep the patterns here while you work through Lessons and Grammar Lab.</p></div><span class="pill">REFERENCE</span></div><div class="notes-grid"><article class="notes-card"><div class="eyebrow">Numbers</div><h3>Cardinal numbers and noun patterns</h3><p>Russian numbers change for gender, and the noun after a number changes too. These are the core forms to recognize first.</p><table class="notes-table"><thead><tr><th>Number</th><th>Russian</th><th>Example</th></tr></thead><tbody><tr><td>1</td><td>один · одна · одно</td><td>один дом · одна книга · одно окно</td></tr><tr><td>2</td><td>два · две</td><td>два дома · две книги</td></tr><tr><td>3</td><td>три</td><td>три дома</td></tr><tr><td>4</td><td>четыре</td><td>четыре дома</td></tr><tr><td>5</td><td>пять</td><td>пять домов</td></tr><tr><td>10</td><td>десять</td><td>десять домов</td></tr></tbody></table><div class="notes-callout"><strong>Quick rule:</strong> 1 usually takes the singular form; 2–4 usually take genitive singular; 5 and higher usually take genitive plural.</div></article><article class="notes-card"><div class="eyebrow">Cases</div><h3>How nouns change</h3><p>Use these example nouns as a model. The exact ending depends on gender, number, and declension.</p><table class="notes-table"><thead><tr><th>Case</th><th>Question</th><th>дом</th><th>книга</th><th>окно</th><th>студенты</th></tr></thead><tbody><tr><td>Nominative</td><td>кто? что?</td><td>дом</td><td>книга</td><td>окно</td><td>студенты</td></tr><tr><td>Accusative</td><td>кого? что?</td><td>вижу дом</td><td>вижу книгу</td><td>вижу окно</td><td>вижу студентов</td></tr><tr><td>Genitive</td><td>кого? чего?</td><td>нет дома</td><td>нет книги</td><td>нет окна</td><td>нет студентов</td></tr><tr><td>Dative</td><td>кому? чему?</td><td>к дому</td><td>к книге</td><td>к окну</td><td>к студентам</td></tr><tr><td>Instrumental</td><td>кем? чем?</td><td>с домом</td><td>с книгой</td><td>с окном</td><td>со студентами</td></tr><tr><td>Prepositional</td><td>о ком? о чём?</td><td>о доме</td><td>о книге</td><td>об окне</td><td>о студентах</td></tr></tbody></table></article></div><div class="section-head"><div><h2>Case reminders</h2><p>Small patterns to notice while you retrieve forms.</p></div></div><div class="panel"><div class="notes-case-list"><div><strong>Accusative</strong><span>direct object: вижу книгу</span></div><div><strong>Genitive</strong><span>absence or possession: нет времени</span></div><div><strong>Dative</strong><span>recipient or direction: дать другу</span></div><div><strong>Instrumental</strong><span>with or by means: с другом</span></div><div><strong>Prepositional</strong><span>topic or location: о работе · в Москве</span></div></div></div>';lessons.after(section);}
     organizeEntertainment(); const scrollMissionHead=[...document.querySelectorAll('#shortFormSection .section-head')].find(head=>head.querySelector('h2')?.textContent==='Make the scroll active'); if(scrollMissionHead){scrollMissionHead.nextElementSibling?.remove();scrollMissionHead.remove();} addNumbersLesson(); ensureNotesSection(); renderFocusedPassage(); renderWriting(); renderListeningSpeaking(); removeListeningIntro(); renderGrammar();
-    renderFlash(); renderVocabulary(); renderTriage(); updateStats(); document.querySelector('#library')?.remove(); document.querySelector('#alphabet')?.remove(); document.querySelector('#triage')?.remove(); initCloudSync();
+    organizeAddWords(); ensureWordPractice(); renderFlash(); renderVocabulary(); renderTriage(); renderWordPractice(); updateStats(); document.querySelector('#library')?.remove(); document.querySelector('#alphabet')?.remove(); document.querySelector('#triage')?.remove(); initCloudSync();
   </script>
 </body>
 </html>
