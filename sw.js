@@ -1,4 +1,4 @@
-const CACHE_NAME = 'russian-sprint-v18';
+const CACHE_NAME = 'russian-sprint-v19';
 const APP_SHELL = [
   './',
   './index.html',

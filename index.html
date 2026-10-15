@@ -525,6 +525,7 @@
   <script src="vocabulary-seed-core1000.js"></script>
   <script src="vocabulary-seed-quizlet-frequency.js"></script>
   <script src="vocabulary-seed-quizlet-frequency-2000-4000.js"></script>
+  <script src="vocabulary-seed-quizlet-frequency-4000-6000.js"></script>
   <script>
     const quizData = [
       { word:'говорить', translit:'guh-vah-REET’', answer:'to speak', options:['to listen','to speak','to read','to write'] },
@@ -601,11 +602,11 @@
       ['ноль — нуля','zero / of zero'],
       ['менять — поменять','to change / to change (imperfective / perfective)']
     ].map(([word,meaning])=>[definitionKey(word),meaning]));
-    const mergedVocabulary=[...ra1Vocabulary,...olgaVocabulary,...olgaPhrases,...supplementalVocabulary,...requestedVocabulary,...core1000Vocabulary,...quizletFrequencyVocabulary,...quizletFrequency2000to4000Vocabulary].filter(item=>item&&item.word).map(item=>{const word=item.word.trim().toLowerCase()==='тулетная бумага'?'туалетная бумага':item.word; const fixed=definitionFixes.get(definitionKey(word)); const missing=item.meaning===item.source||!String(item.meaning||'').trim(); return {...item,word,meaning:fixed||(!missing?item.meaning:'Definition coming soon')};});
+    const mergedVocabulary=[...ra1Vocabulary,...olgaVocabulary,...olgaPhrases,...supplementalVocabulary,...requestedVocabulary,...core1000Vocabulary,...quizletFrequencyVocabulary,...quizletFrequency2000to4000Vocabulary,...quizletFrequency4000to6000Vocabulary].filter(item=>item&&item.word).map(item=>{const word=item.word.trim().toLowerCase()==='тулетная бумага'?'туалетная бумага':item.word; const fixed=definitionFixes.get(definitionKey(word)); const missing=item.meaning===item.source||!String(item.meaning||'').trim(); return {...item,word,meaning:fixed||(!missing?item.meaning:'Definition coming soon')};});
     const vocabularyMap=new Map();
     mergedVocabulary.forEach(item=>{const key=vocabularyKey(item.word),existing=vocabularyMap.get(key); if(!existing){vocabularyMap.set(key,item);return;} const preferred=existing.meaning==='Definition coming soon'&&item.meaning!=='Definition coming soon'?item.meaning:existing.meaning; vocabularyMap.set(key,{...existing,meaning:preferred,description:[existing.description,item.description].filter(Boolean).join(' · ')});});
     const initialVocabulary=[...vocabularyMap.values()];
-    const vocabularyResetVersion='ra1-plus-olga-ra2-vocabblaster-core1000-quizlet-frequency-2000-4000-definitions-practice-2026-10-15d';
+    const vocabularyResetVersion='ra1-plus-olga-ra2-vocabblaster-core1000-quizlet-frequency-4000-6000-definitions-practice-2026-10-15e';
     const freshVocabulary=()=>initialVocabulary.map(item=>({...item,status:'new',exposures:0,successes:0,dueAt:Date.now()}));
     const restoreVocabulary=oldVocabulary=>{const oldByKey=new Map((oldVocabulary||[]).filter(item=>item&&item.word).map(item=>[vocabularyKey(item.word),item])); const restored=initialVocabulary.map(base=>{const old=oldByKey.get(vocabularyKey(base.word)); return {...base,status:old?.status||'new',exposures:old?.exposures||0,successes:old?.successes||0,dueAt:old?.dueAt||Date.now(),lastMode:old?.lastMode,modeExposures:old?.modeExposures||{}};}); const seededKeys=new Set(initialVocabulary.map(item=>vocabularyKey(item.word))); const extras=(oldVocabulary||[]).filter(item=>item&&item.word&&!seededKeys.has(vocabularyKey(item.word))); return [...restored,...extras];};
     if(localStorage.getItem('russianSprintVocabularyVersion')!==vocabularyResetVersion||!Array.isArray(state.vocab)||!state.vocab.length){
