@@ -775,17 +775,19 @@
       ['реалистично','realistically'],
       ['революция','revolution'],
       ['репутация','reputation'],
-      ['традиция','tradition']
+      ['традиция','tradition'],
+      ['рассказывать','to tell; to narrate; to talk about'],
+      ['рассказывать / рассказать','to tell; to narrate (imperfective / perfective)']
     ].map(([word,meaning])=>[definitionKey(word),meaning]));
     const quizletFrequency6000to8000Vocabulary=Array.isArray(window.quizletFrequency6000to8000Vocabulary)?window.quizletFrequency6000to8000Vocabulary:[];
-    const wordFixes=new Map([['тулетная бумага','туалетная бумага'],['всё таки','всё-таки'],['встречаться / .встретимся','встречаться / встретимся'],['написанно','написано'],['мининмум','минимум']].map(([from,to])=>[definitionKey(from),to]));
+    const wordFixes=new Map([['тулетная бумага','туалетная бумага'],['всё таки','всё-таки'],['встречаться / .встретимся','встречаться / встретимся'],['написанно','написано'],['мининмум','минимум'],['рассказывать','рассказывать / рассказать']].map(([from,to])=>[definitionKey(from),to]));
     const mergedVocabulary=[...ra1Vocabulary,...olgaVocabulary,...olgaPhrases,...supplementalVocabulary,...requestedVocabulary,...core1000Vocabulary,...quizletFrequencyVocabulary,...quizletFrequency2000to4000Vocabulary,...quizletFrequency4000to6000Vocabulary,...quizletFrequency6000to8000Vocabulary].filter(item=>item&&item.word).map(item=>{const rawWord=item.word.trim(); const word=wordFixes.get(definitionKey(rawWord))||rawWord; const fixed=definitionFixes.get(definitionKey(word))||definitionFixes.get(definitionKey(rawWord)); const missing=item.meaning===item.source||!String(item.meaning||'').trim(); return {...item,word,meaning:fixed||(!missing?item.meaning:'Definition coming soon')};});
     const vocabularyMap=new Map();
     mergedVocabulary.forEach(item=>{const key=vocabularyKey(item.word),existing=vocabularyMap.get(key); if(!existing){vocabularyMap.set(key,item);return;} const preferred=existing.meaning==='Definition coming soon'&&item.meaning!=='Definition coming soon'?item.meaning:existing.meaning; vocabularyMap.set(key,{...existing,meaning:preferred,description:[existing.description,item.description].filter(Boolean).join(' · ')});});
     const initialVocabulary=[...vocabularyMap.values()];
-    const vocabularyResetVersion='ra1-plus-olga-ra2-vocabblaster-core1000-quizlet-frequency-6000-8000-definitions-practice-2026-10-21a';
+    const vocabularyResetVersion='ra1-plus-olga-ra2-vocabblaster-core1000-quizlet-frequency-6000-8000-definitions-practice-2026-10-21b';
     const freshVocabulary=()=>initialVocabulary.map(item=>({...item,status:'new',exposures:0,successes:0,dueAt:Date.now()}));
-    const restoreVocabulary=oldVocabulary=>{const oldByKey=new Map((oldVocabulary||[]).filter(item=>item&&item.word).map(item=>[vocabularyKey(item.word),item])); const restored=initialVocabulary.map(base=>{const old=oldByKey.get(vocabularyKey(base.word)); return {...base,status:old?.status||'new',exposures:old?.exposures||0,successes:old?.successes||0,dueAt:old?.dueAt||Date.now(),lastMode:old?.lastMode,modeExposures:old?.modeExposures||{}};}); const seededKeys=new Set(initialVocabulary.map(item=>vocabularyKey(item.word))); const extras=(oldVocabulary||[]).filter(item=>item&&item.word&&!seededKeys.has(vocabularyKey(item.word))); return [...restored,...extras];};
+    const restoreVocabulary=oldVocabulary=>{const canonicalWord=word=>wordFixes.get(definitionKey(word))||word;const canonicalKey=word=>vocabularyKey(canonicalWord(word));const oldByKey=new Map((oldVocabulary||[]).filter(item=>item&&item.word).map(item=>[canonicalKey(item.word),item])); const restored=initialVocabulary.map(base=>{const old=oldByKey.get(canonicalKey(base.word)); return {...base,status:old?.status||'new',exposures:old?.exposures||0,successes:old?.successes||0,dueAt:old?.dueAt||Date.now(),lastMode:old?.lastMode,modeExposures:old?.modeExposures||{}};}); const seededKeys=new Set(initialVocabulary.map(item=>canonicalKey(item.word))); const extras=(oldVocabulary||[]).filter(item=>item&&item.word&&!seededKeys.has(canonicalKey(item.word))); return [...restored,...extras];};
     if(localStorage.getItem('russianSprintVocabularyVersion')!==vocabularyResetVersion||!Array.isArray(state.vocab)||!state.vocab.length){
       state={...state,words:0,vocab:restoreVocabulary(state.vocab)};
       localStorage.setItem('russianSprintVocabularyVersion',vocabularyResetVersion);
