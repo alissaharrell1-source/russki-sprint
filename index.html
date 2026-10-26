@@ -856,6 +856,7 @@
       state={...state,words:0,vocab:restoreVocabulary(state.vocab)};
       localStorage.setItem('russianSprintVocabularyVersion',vocabularyResetVersion);
     }
+     state.vocab.forEach(item=>{const normalized=String(item.word||'').toLowerCase().replace(/\s/g,'');if(normalized.startsWith('принимать/принять'))item.meaning='to accept (imperfective / perfective)';});
     state.words=state.vocab.length;
     save();
     let vocabFilter='all', vocabSearch='';
