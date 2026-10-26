@@ -632,6 +632,7 @@
     const vocabularyKey=word=>word.trim().toLowerCase().replace(/ё/g,'е').replace(/[.,!?;:()]/g,'').replace(/\s*(?:\/|—|–)\s*/g,' / ').split(' / ').map(part=>part.trim()).filter(Boolean).sort().join(' / ');
     const definitionKey=word=>String(word||'').toLowerCase().replace(/ё/g,'е').replace(/[.,!?;:()«»"…—–-]+/g,' ').replace(/\s+/g,' ').trim();
     const definitionFixes=new Map([
+       ['принимать / принять','to accept (imperfective / perfective)'],
       ['Да, пожалуйста...А...Вы откуда? Американец, да','Yes, please… Where are you from? American, right?'],
       ['Да, я американец. Большой акцент, правда','Yes, I am American. A strong accent, right?'],
       ['Да нет, нечего. Вы хорошо говорите по-русски','No, it is nothing. You speak Russian well.'],
