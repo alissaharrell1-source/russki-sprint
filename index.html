@@ -810,7 +810,7 @@
       ['пятьсот','five hundred'],
       ['размер','size'],
       ['четыреста','four hundred'],
-      ['элька','size L; an L (colloquial)'],
+
       ['включать / включить','to turn on; to switch on; to include (imperfective / perfective)'],
       ['логин','login; username'],
       ['менять / поменять','to change; to exchange (imperfective / perfective)'],
@@ -857,6 +857,8 @@
       localStorage.setItem('russianSprintVocabularyVersion',vocabularyResetVersion);
     }
      state.vocab.forEach(item=>{const normalized=String(item.word||'').toLowerCase().replace(/\s/g,'');if(normalized.startsWith('принимать/принять'))item.meaning='to accept (imperfective / perfective)';});
+    const removedVocabularyVersion='remove-elka-size-entry-2026-10-27';
+    if(localStorage.getItem('russianSprintRemovedVocabularyVersion')!==removedVocabularyVersion){ state.vocab=state.vocab.filter(item=>vocabularyKey(item.word)!=='элька'); localStorage.setItem('russianSprintRemovedVocabularyVersion',removedVocabularyVersion); }
     state.words=state.vocab.length;
     save();
     let vocabFilter='all', vocabSearch='';
