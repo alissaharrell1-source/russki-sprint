@@ -1323,3 +1323,73 @@
 
               <script src="./targeted-reading-library.js?v=20261028-1"></script>
               <script src="./app-api.js?v=20261028-4"></script>
+
+                                                                                                                                                                              <style id="minimal-two-page-style">
+  body { background: #fbf8f2; }
+  .app-shell { display: block; min-height: 100vh; }
+  .sidebar, .mobile-nav { display: none !important; }
+  .main { max-width: 1180px; padding: 24px 28px 60px; }
+  .topbar { margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid #e6e3da; }
+  .topbar > div:first-child .eyebrow { display: none; }
+  .topbar h1 { font-size: 32px; margin: 0; }
+  .topbar .streak { display: none; }
+  .minimal-tabs { display: flex; gap: 8px; margin: 0 0 24px; border-bottom: 1px solid #e6e3da; }
+  .minimal-tab { border: 0; border-bottom: 3px solid transparent; background: transparent; color: #68716b; padding: 13px 18px; font-weight: 800; cursor: pointer; }
+  .minimal-tab.active { color: #4b0f1a; border-bottom-color: #0039a6; }
+  .view#vocab { border: 0 !important; padding: 0 !important; background: transparent !important; }
+  .view#practice { display: none; }
+  .view#practice.active { display: block; }
+  #vocab > .section-head { margin-top: 0; }
+  #vocab > .section-head h2 { font-size: 32px; }
+  #vocab > .section-head p { font-size: 15px; }
+  #vocab .next-word { display: none; }
+  #vocab .vocab-layout { display: block; }
+  #vocab .vocab-library-head { margin-top: 0; }
+  #practice .section-head { margin-top: 0; }
+  #practice .section-head h2 { font-size: 32px; }
+  #practice .section-head p { font-size: 15px; }
+  #practice .word-practice-panel { margin-top: 0; background: #fffdf9; border-color: #e6e3da; box-shadow: 0 12px 30px rgba(56,42,26,.06); }
+  #syncPanel { margin-top: 24px; }
+  @media (max-width:700px) { .main { padding: 20px 17px 42px; } .minimal-tab { flex: 1; padding: 12px 8px; } .topbar h1 { font-size: 27px; } }
+</style>
+<script>
+(function(){
+  const $ = (selector) => document.querySelector(selector);
+  const vocab = $('#vocab');
+  const main = document.querySelector('.main');
+  if (!vocab || !main || $('#minimalTabs')) return;
+  const existingPractice = $('#wordPractice');
+  const syncPanel = $('#syncPanel');
+  const practice = document.createElement('section');
+  practice.className = 'view';
+  practice.id = 'practice';
+  practice.innerHTML = '<div class="section-head"><div><div class="eyebrow">Practice</div><h2>Anki review</h2><p>Study due words first. Type the Russian answer, reveal it when needed, then rate the recall.</p></div><span class="pill" id="minimalPracticeStatus">SPACED REPETITION</span></div><div id="practiceMount"></div>';
+  main.appendChild(practice);
+  if (existingPractice) $('#practiceMount').appendChild(existingPractice);
+  if (syncPanel) vocab.appendChild(syncPanel);
+  document.querySelectorAll('.view').forEach((view) => { if (view.id !== 'vocab' && view.id !== 'practice') view.remove(); });
+  const tabs = document.createElement('nav');
+  tabs.className = 'minimal-tabs';
+  tabs.id = 'minimalTabs';
+  tabs.setAttribute('aria-label', 'Main navigation');
+  tabs.innerHTML = '<button class="minimal-tab active" data-minimal-view="vocab" type="button">Vocabulary</button><button class="minimal-tab" data-minimal-view="practice" type="button">Practice</button>';
+  vocab.before(tabs);
+  const vocabHeading = vocab.querySelector(':scope > .section-head h2');
+  const vocabDescription = vocab.querySelector(':scope > .section-head p');
+  if (vocabHeading) vocabHeading.textContent = 'Vocabulary';
+  if (vocabDescription) vocabDescription.textContent = 'Browse, manage, and listen to every word in your Russian bank.';
+  const topHeading = document.querySelector('.topbar h1');
+  if (topHeading) topHeading.textContent = 'Русский Sprint';
+  const topEyebrow = document.querySelector('.topbar .eyebrow');
+  if (topEyebrow) topEyebrow.textContent = 'Vocabulary + Practice';
+  function selectView(viewId) {
+    document.querySelectorAll('.view').forEach((view) => view.classList.toggle('active', view.id === viewId));
+    tabs.querySelectorAll('button').forEach((button) => button.classList.toggle('active', button.dataset.minimalView === viewId));
+    if (viewId === 'practice' && typeof renderWordPractice === 'function') renderWordPractice();
+    if (viewId === 'vocab' && typeof renderVocabulary === 'function') renderVocabulary();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  tabs.querySelectorAll('button').forEach((button) => button.addEventListener('click', () => selectView(button.dataset.minimalView)));
+  selectView('vocab');
+})();
+</script>
