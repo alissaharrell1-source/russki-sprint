@@ -112,8 +112,12 @@
       document.querySelectorAll('[data-anki-rate]').forEach((button) => { button.disabled = true; }); renderVocabulary(); updateStats();
     } catch (error) { $('#checkWordPractice').disabled = false; $('#practiceFeedback').textContent = 'AI evaluation is unavailable, so local recall checking is being used.'; localCheckWordPractice(); }
   }
-  const targetButton = $('#generateTargetedReading');
-  if (targetButton) targetButton.onclick = generateTargetedParagraphs;
-  const practiceButton = $('#checkWordPractice');
-  if (practiceButton) practiceButton.onclick = checkWordPracticeWithLLM;
+  const attachHandlers = () => {
+    const targetButton = $('#generateTargetedReading');
+    if (targetButton) targetButton.onclick = generateTargetedParagraphs;
+    const practiceButton = $('#checkWordPractice');
+    if (practiceButton) practiceButton.onclick = checkWordPracticeWithLLM;
+  };
+  attachHandlers();
+  if (document.body) new MutationObserver(attachHandlers).observe(document.body, { childList: true, subtree: true });
 }());
