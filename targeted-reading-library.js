@@ -130,3 +130,5 @@ library['платить / заплатить']=library['платить'].concat(
 library['проверять / проверить']=library['проверять'].concat(library['проверить']);
 window.TARGETED_READING_LIBRARY=library;
 }());
+
+  document.documentElement.dataset.targetedLibraryLoaded='yes';
