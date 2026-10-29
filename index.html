@@ -1393,3 +1393,22 @@
   selectView('vocab');
 })();
 </script>
+
+      <script>
+(function(){
+  function fillEnglishDefinition(){
+    const label = document.querySelector('#wordPractice .word-practice-grid .eyebrow');
+    if (label) label.textContent = 'ENGLISH DEFINITION';
+    const prompt = document.querySelector('#practicePrompt');
+    if (!prompt || prompt.textContent.trim() !== '—') return;
+    const pool = typeof practicePool === 'function' ? practicePool() : [];
+    const item = pool[0];
+    if (item && item.meaning) prompt.textContent = item.meaning;
+  }
+  const original = window.renderWordPractice;
+  if (typeof original === 'function') {
+    window.renderWordPractice = function(){ original(); fillEnglishDefinition(); };
+  }
+  setTimeout(fillEnglishDefinition, 0);
+})();
+</script>
