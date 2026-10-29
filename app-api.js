@@ -1,3 +1,14 @@
+(function reviewFirstSchedulerPatch(){
+  if(window.__reviewFirstQueuePatched)return;
+  function apply(){
+    if(window.__reviewFirstQueuePatched||typeof window.practicePool!=='function')return;
+    window.practicePool=function(){const now=Date.now();return [...state.vocab].filter(item=>item&&item.word&&item.meaning&&item.meaning!=='Definition coming soon').sort((a,b)=>{const aDue=(a.dueAt||0)<=now,bDue=(b.dueAt||0)<=now,aReviewed=(a.exposures||0)>0||!!a.lastReviewAt||!!a.reps,bReviewed=(b.exposures||0)>0||!!b.lastReviewAt||!!b.reps,aBucket=aDue?(aReviewed?0:1):2,bBucket=bDue?(bReviewed?0:1):2;if(aBucket!==bBucket)return aBucket-bBucket;if(aDue&&bDue){const aOverdue=Math.max(0,now-(a.dueAt||0)),bOverdue=Math.max(0,now-(b.dueAt||0));if(aOverdue!==bOverdue)return bOverdue-aOverdue;}return(a.dueAt||0)-(b.dueAt||0)||(a.exposures||0)-(b.exposures||0);});};
+    const originalRender=window.renderWordPractice;
+    if(typeof originalRender==='function'){window.renderWordPractice=function(){originalRender();const now=Date.now(),pool=window.practicePool(),due=pool.filter(item=>(item.dueAt||0)<=now),reviewed=due.filter(item=>(item.exposures||0)>0||item.lastReviewAt||item.reps),counter=document.querySelector('#practiceDueCount');if(counter&&due.length)counter.textContent=reviewed.length+' review due'+(due.length-reviewed.length?' · '+(due.length-reviewed.length)+' new':'');};window.__reviewFirstQueuePatched=true;setTimeout(()=>window.renderWordPractice(),0);}
+  }
+  if(typeof window.practicePool==='function')apply();else window.addEventListener('load',apply,{once:true});
+}());
+
 (function () {
   const $ = (selector) => document.querySelector(selector);
   const api = {};
