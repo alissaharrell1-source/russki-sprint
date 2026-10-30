@@ -1410,5 +1410,27 @@
     window.renderWordPractice = function(){ original(); fillEnglishDefinition(); };
   }
   setTimeout(fillEnglishDefinition, 0);
+  if(!window.__quizletTwoPassMode){
+    window.__quizletTwoPassMode=true;
+    const queueEntry=item=>ankiRepeatQueue.find(entry=>entry.key===vocabularyKey(item.word));
+    const refreshRatings=()=>{const item=currentPracticeItem(),entry=item&&queueEntry(item),unlocked=!!(entry&&(entry.correct||0)>=2&&wordPracticeAnsweredCorrect);document.querySelectorAll('[data-anki-rate]').forEach(button=>button.disabled=!unlocked);};
+    const originalPracticeRender=window.renderWordPractice;
+    if(typeof originalPracticeRender==='function')window.renderWordPractice=function(){originalPracticeRender();refreshRatings();};
+    const showNextAfterFirstPass=key=>{advanceAnkiRepeatQueue(key);const ready=ankiRepeatQueue.find(repeat=>repeat.key!==key&&repeat.wait<=0&&(repeat.correct||0)<2);const next=ready?state.vocab.find(entry=>vocabularyKey(entry.word)===ready.key):practicePool().find(entry=>vocabularyKey(entry.word)!==key&&!ankiRepeatQueue.some(repeat=>repeat.key===vocabularyKey(entry.word)&&repeat.wait>0));wordPracticeCurrentKey=next?vocabularyKey(next.word):'';wordPracticeIndex++;window.renderWordPractice();};
+    window.checkWordPractice=function(){
+      const item=currentPracticeItem();if(!item||wordPracticeLocked)return;
+      const input=document.querySelector('#practiceRussian'),typed=normalizePracticeText(input.value);
+      if(!typed){document.querySelector('#practiceFeedback').textContent='Type the Russian word or phrase first, or reveal the answer.';input.focus();return;}
+      if(!practiceAnswers(item.word).includes(typed)){document.querySelector('#practiceFeedback').textContent='Not quite — try again.';toast('Try the same word again.');return;}
+      wordPracticeLocked=true;wordPracticeAnsweredCorrect=true;wordPracticeRevealed=true;
+      const key=vocabularyKey(item.word);let entry=queueEntry(item);if(!entry){entry={key,wait:2,correct:0};ankiRepeatQueue.push(entry);}entry.correct=Math.min(2,(entry.correct||0)+1);
+      if(entry.correct<2){entry.wait=2;document.querySelector('#practiceFeedback').textContent='Correct — pass 1/2. This word will return after two more words.';toast('Correct — it will return after two more cards.');updateStats();setTimeout(()=>showNextAfterFirstPass(key),450);}
+      else{entry.wait=0;document.querySelector('#practiceAnswer').textContent='Russian: '+item.word;document.querySelector('#practiceAnswer').hidden=false;document.querySelector('#practiceFeedback').textContent='Correct — pass 2/2. Now choose Again, Hard, Good, or Easy.';refreshRatings();updateStats();}
+    };
+    window.revealWordPracticeAnswer=function(){const item=currentPracticeItem();if(!item)return;wordPracticeRevealed=true;document.querySelector('#practiceAnswer').textContent='Russian: '+item.word;document.querySelector('#practiceAnswer').hidden=false;document.querySelector('#practiceFeedback').textContent='Answer shown. Type it correctly on a later pass to unlock the rating.';refreshRatings();};
+    const bindTwoPass=()=>{const check=document.querySelector('#checkWordPractice'),reveal=document.querySelector('#showWordPracticeAnswer');if(check)check.onclick=window.checkWordPractice;if(reveal)reveal.onclick=window.revealWordPracticeAnswer;refreshRatings();};
+    bindTwoPass();new MutationObserver(bindTwoPass).observe(document.body,{childList:true,subtree:true});
+  }
+
 })();
 </script>
