@@ -1551,8 +1551,7 @@
     else{item.successes=(item.successes||0)+1;item.reps=(item.reps||0)+1;item.stability=rating==='easy'?4:rating==='good'?1:10/1440;item.status=rating==='easy'?'known':'somewhat';}
     item.dueAt=now+wait;
     ankiRepeatQueue=ankiRepeatQueue.filter(entry=>entry.key!==key);
-    const next=practicePool().find(entry=>vocabularyKey(entry.word)!==key)||null;
-    wordPracticeCurrentKey=next?vocabularyKey(next.word):'';wordPracticeIndex++;
+    wordPracticeCurrentKey='';wordPracticeIndex++;
     await save();renderVocabulary();updateStats();
     $('#practiceFeedback').textContent=(rating==='again'?'Again':rating==='hard'?'Hard':rating==='good'?'Good':'Easy')+' — this word will return in '+labels[rating]+'.';
     renderWordPractice();toast('Review saved · '+item.word+' · next in '+labels[rating]);
@@ -1620,5 +1619,31 @@
   setTimeout(repair,800);
   const timer=setInterval(repair,3000);
   setTimeout(function(){clearInterval(timer);},30000);
+})();
+</script>
+
+<script id="due-again-refresh-fix">
+(function(){
+  if(window.__dueAgainRefreshFix)return;
+  window.__dueAgainRefreshFix=true;
+  function valid(item){return item&&item.word&&item.meaning&&item.meaning!=='Definition coming soon';}
+  function refreshIfDue(){
+    if(!document.querySelector('#practice.active')||!Array.isArray(state?.vocab))return;
+    const input=document.querySelector('#practiceRussian');
+    if(input&&input.value.trim())return;
+    if(typeof wordPracticeLocked!=='undefined'&&wordPracticeLocked)return;
+    const now=Date.now();
+    const due=state.vocab.filter(function(item){return valid(item)&&(item.exposures||0)>0&&(item.dueAt||0)<=now;}).sort(function(a,b){return (a.dueAt||0)-(b.dueAt||0);})[0];
+    if(!due)return;
+    const current=typeof currentPracticeItem==='function'?currentPracticeItem():null;
+    if(current&&vocabularyKey(current.word)===vocabularyKey(due.word))return;
+    wordPracticeCurrentKey='';
+    if(typeof renderWordPractice==='function')renderWordPractice();
+    if(typeof updateStats==='function')updateStats();
+    if(typeof toast==='function')toast('Due again · '+due.word);
+  }
+  window.setInterval(refreshIfDue,2000);
+  document.addEventListener('visibilitychange',refreshIfDue);
+  window.addEventListener('focus',refreshIfDue);
 })();
 </script>
