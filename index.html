@@ -1483,4 +1483,86 @@
   bindPracticeRatings();new MutationObserver(bindPracticeRatings).observe(document.body,{childList:true,subtree:true});
   renderHomeDashboard();selectHome();
 })();
+<script id="rating-first-srs-patch">
+(function(){
+  if(window.__ratingFirstSrsMode)return;
+  window.__ratingFirstSrsMode=true;
+  const $=selector=>document.querySelector(selector);
+  const intervals={again:60000,hard:10*60000,good:24*60*60000,easy:4*24*60*60000};
+  const labels={again:'1 min',hard:'10 min',good:'1 day',easy:'4 days'};
+  const statusLabel=item=>item?.status==='known'?'Known':item?.status==='somewhat'?'Somewhat known':'Not yet';
+  const queueFor=item=>item&&Array.isArray(ankiRepeatQueue)?ankiRepeatQueue.find(entry=>entry.key===vocabularyKey(item.word)):null;
+  function updateRatingButtons(item){
+    document.querySelectorAll('[data-anki-rate]').forEach(button=>{
+      const rating=button.dataset.ankiRate;
+      button.disabled=!item||!wordPracticeRevealed;
+      const small=button.querySelector('small');
+      if(small&&labels[rating])small.textContent=labels[rating];
+    });
+  }
+  function updatePracticeCopy(item){
+    const description=document.querySelector('#wordPractice .section-head p');
+    if(description)description.textContent='Type the Russian answer, reveal it if needed, then choose when you want to see this word again.';
+    const meta=$('#practiceMeta');
+    if(meta&&item)meta.textContent='Status: '+statusLabel(item)+' · '+(item.exposures||0)+' exposures · '+formatDue(item)+' · Choose a review interval';
+    const count=$('#practiceDueCount');
+    if(count&&item){const due=practicePool().filter(entry=>(entry.dueAt||0)<=Date.now()).length;count.textContent=due+' due now';}
+  }
+  const originalRender=window.renderWordPractice;
+  window.renderWordPractice=function(){
+    if(typeof originalRender==='function')originalRender();
+    const item=typeof currentPracticeItem==='function'?currentPracticeItem():null;
+    updatePracticeCopy(item);
+    updateRatingButtons(item);
+    const check=$('#checkWordPractice'),reveal=$('#showWordPracticeAnswer');
+    if(check)check.onclick=window.checkWordPractice;
+    if(reveal)reveal.onclick=window.revealWordPracticeAnswer;
+    bindRatings();
+  };
+  window.checkWordPractice=function(){
+    const item=currentPracticeItem();
+    if(!item||wordPracticeLocked)return;
+    const input=$('#practiceRussian'),typed=normalizePracticeText(input?.value);
+    if(!typed){$('#practiceFeedback').textContent='Type the Russian word or phrase first, or reveal the answer.';input?.focus();return;}
+    if(!practiceAnswers(item.word).includes(typed)){$('#practiceFeedback').textContent='Not quite — try again, or reveal the answer.';toast('Try again.');return;}
+    wordPracticeLocked=true;wordPracticeAnsweredCorrect=true;wordPracticeRevealed=true;
+    const key=vocabularyKey(item.word),entry=queueFor(item);
+    if(entry){entry.wait=0;entry.correct=2;}else ankiRepeatQueue.push({key,wait:0,correct:2});
+    $('#practiceAnswer').textContent='Russian: '+item.word;$('#practiceAnswer').hidden=false;
+    $('#practiceFeedback').textContent='Correct — now choose Again, Hard, Good, or Easy.';
+    updateRatingButtons(item);updatePracticeCopy(item);updateStats();
+  };
+  window.revealWordPracticeAnswer=function(){
+    const item=currentPracticeItem();if(!item)return;
+    wordPracticeRevealed=true;
+    const key=vocabularyKey(item.word),entry=queueFor(item);
+    if(entry){entry.wait=0;entry.correct=2;}else ankiRepeatQueue.push({key,wait:0,correct:2});
+    $('#practiceAnswer').textContent='Russian: '+item.word;$('#practiceAnswer').hidden=false;
+    $('#practiceFeedback').textContent='Answer shown — choose when this word should return.';
+    updateRatingButtons(item);updatePracticeCopy(item);
+  };
+  window.reviewWordAnki=function(item,rating){
+    if(!item||!intervals[rating])return;
+    const now=Date.now(),key=vocabularyKey(item.word),wait=intervals[rating];
+    item.exposures=(item.exposures||0)+1;item.activeExposures=(item.activeExposures||0)+1;item.lastMode='production';item.lastExposureAt=now;item.lastReviewAt=now;
+    item.modeExposures=item.modeExposures||{};item.modeExposures.production=(item.modeExposures.production||0)+1;
+    if(rating==='again'){item.status='new';item.lapses=(item.lapses||0)+1;item.reps=0;item.stability=Math.max(.08,1/1440);}
+    else{item.successes=(item.successes||0)+1;item.reps=(item.reps||0)+1;item.stability=rating==='easy'?4:rating==='good'?1:10/1440;item.status=rating==='easy'?'known':'somewhat';}
+    item.dueAt=now+wait;
+    ankiRepeatQueue=ankiRepeatQueue.filter(entry=>entry.key!==key);
+    const next=practicePool().find(entry=>vocabularyKey(entry.word)!==key)||null;
+    wordPracticeCurrentKey=next?vocabularyKey(next.word):'';wordPracticeIndex++;
+    save();renderVocabulary();updateStats();
+    $('#practiceFeedback').textContent=(rating==='again'?'Again':rating==='hard'?'Hard':rating==='good'?'Good':'Easy')+' — this word will return in '+labels[rating]+'.';
+    renderWordPractice();toast('Review saved · '+item.word+' · next in '+labels[rating]);
+  };
+  function bindRatings(){
+    document.querySelectorAll('[data-anki-rate]').forEach(button=>{
+      button.onclick=()=>{if(button.disabled)return;if(!wordPracticeRevealed){toast('Answer or reveal the word before choosing a review interval.');return;}window.reviewWordAnki(currentPracticeItem(),button.dataset.ankiRate);};
+    });
+  }
+  bindRatings();
+  ankiRepeatQueue=[];
+  setTimeout(()=>{bindRatings();if(typeof window.renderWordPractice==='function')window.renderWordPractice();},0);
+})();
 </script>
