@@ -1600,3 +1600,25 @@
   try{currentPracticeItem=dueCurrentPracticeItem;}catch(error){}
 })();
 </script>
+
+<script id="definition-repair-v1">
+(function(){
+  const meaning='still; nevertheless; after all; anyway';
+  const normalize=function(value){return String(value||'').toLowerCase().replace(/ё/g,'е').replace(/[\s-]+/g,'-').trim();};
+  const repair=function(){
+    try{
+      if(typeof state==='undefined'||!state||!Array.isArray(state.vocab))return;
+      const item=state.vocab.find(function(entry){return normalize(entry.word)==='все-таки';});
+      if(!item)return;
+      if(item.meaning&&item.meaning!=='Russian Accelerator 2 · Unit 1 · Lesson 1'&&item.meaning!=='Definition coming soon')return;
+      item.meaning=meaning;
+      if(typeof save==='function')save();
+      if(typeof renderVocabulary==='function')renderVocabulary();
+      if(typeof updateStats==='function')updateStats();
+    }catch(error){}
+  };
+  setTimeout(repair,800);
+  const timer=setInterval(repair,3000);
+  setTimeout(function(){clearInterval(timer);},30000);
+})();
+</script>
