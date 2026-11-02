@@ -1583,3 +1583,20 @@
   window.addEventListener('beforeunload',()=>{if(hydrated)writeSnapshot();});
 })();
 </script>
+
+<script id="due-queue-final-fix">
+(function(){
+  const dueCurrentPracticeItem=function(){
+    const ready=ankiRepeatQueue.find(entry=>entry.wait<=0);
+    if(!wordPracticeCurrentKey&&ready){const repeat=state.vocab.find(entry=>vocabularyKey(entry.word)===ready.key);if(repeat){wordPracticeCurrentKey=ready.key;return repeat;}}
+    const now=Date.now(),eligible=item=>item&&item.word&&item.meaning&&item.meaning!=='Definition coming soon',reviewedDue=state.vocab.filter(item=>eligible(item)&&(item.exposures||0)>0&&(item.dueAt||0)<=now).sort((a,b)=>(a.dueAt||0)-(b.dueAt||0)),newDue=state.vocab.filter(item=>eligible(item)&&(item.exposures||0)<=0&&(item.dueAt||0)<=now),duePool=[...reviewedDue,...newDue];
+    let item=wordPracticeCurrentKey?state.vocab.find(entry=>vocabularyKey(entry.word)===wordPracticeCurrentKey&&eligible(entry)):null;
+    if(item&&((item.dueAt||0)<=now||ready?.key===vocabularyKey(item.word)))return item;
+    item=duePool[0]||state.vocab.filter(entry=>eligible(entry)&&(entry.exposures||0)<=0).sort((a,b)=>(a.dueAt||0)-(b.dueAt||0))[0]||practicePool()[0]||null;
+    if(item)wordPracticeCurrentKey=vocabularyKey(item.word);
+    return item;
+  };
+  window.currentPracticeItem=dueCurrentPracticeItem;
+  try{currentPracticeItem=dueCurrentPracticeItem;}catch(error){}
+})();
+</script>
