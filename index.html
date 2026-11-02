@@ -900,8 +900,8 @@
     function renderTriage(){ const fresh=state.vocab.filter(item=>item.status==='new'); const item=fresh.length?fresh[triageIndex%fresh.length]:null; $('#triageRemaining').textContent=fresh.length+' NEW WORDS'; $('#triageWord').textContent=item?item.word:'Queue complete'; $('#triageMeaning').textContent=item?item.meaning:'You have sorted the current queue.'; $('#triageSource').textContent=item?(item.source||'Your personal vocabulary pool'):'Add more words from My Words.'; $('#triageSpeaker').onclick=()=>item&&speak(item.word); document.querySelectorAll('[data-triage-rate]').forEach(button=>button.disabled=!item); $('#triageProgressBar').style.width=(state.vocab.length?Math.round(((state.vocab.length-fresh.length)/state.vocab.length)*100):100)+'%'; }
     document.querySelectorAll('[data-triage-rate]').forEach(button=>button.addEventListener('click',()=>{const fresh=state.vocab.filter(entry=>entry.status==='new');const item=fresh.length?fresh[triageIndex%fresh.length]:null;if(item){if(button.dataset.triageRate==='new')triageIndex=(triageIndex+1)%Math.max(fresh.length,1);rateWord(item,button.dataset.triageRate);toast('Sorted: '+item.word);}}));
     let quizIndex = 0, quizLocked = false, flashIndex = 0, selectedCategory = 'essentials';
-     function persistLocalState(){const snapshot=JSON.stringify(state);let localSaved=false;try{localStorage.setItem(LOCAL_STATE_KEY,snapshot);localSaved=true;}catch(error){console.warn('Primary browser storage is full; using durable progress storage.');}try{localStorage.setItem(LOCAL_BACKUP_KEY,JSON.stringify({format:'russian-sprint-backup',savedAt:new Date().toISOString(),reason:'automatic-save',state:JSON.parse(snapshot)}));}catch(error){console.warn('Local backup storage is full; using durable progress storage.');}if(window.__russianSprintWriteDurable)window.__russianSprintWriteDurable();if(!localSaved&&!window.__russianSprintWriteDurable)toast('Browser storage is full. Sign in to sync or download a backup.');}
-     function save(){ persistLocalState(); if(cloudUser&&cloudReady){ clearTimeout(cloudSyncTimer); cloudSyncTimer=setTimeout(()=>pushCloudState({backup:false}),800); } }
+     function persistLocalState(){const snapshot=JSON.stringify(state);let localSaved=false;try{localStorage.setItem(LOCAL_STATE_KEY,snapshot);localSaved=true;}catch(error){console.warn('Primary browser storage is full; using durable progress storage.');}try{localStorage.setItem(LOCAL_BACKUP_KEY,JSON.stringify({format:'russian-sprint-backup',savedAt:new Date().toISOString(),reason:'automatic-save',state:JSON.parse(snapshot)}));}catch(error){console.warn('Local backup storage is full; using durable progress storage.');}const durableSave=window.__russianSprintWriteDurable?window.__russianSprintWriteDurable():Promise.resolve();if(!localSaved&&!window.__russianSprintWriteDurable)toast('Browser storage is full. Sign in to sync or download a backup.');return durableSave;}
+     function save(){ const durableSave=persistLocalState(); if(cloudUser&&cloudReady){ clearTimeout(cloudSyncTimer); cloudSyncTimer=setTimeout(()=>pushCloudState({backup:false}),800); } return durableSave; }
      function setSyncUi(message,badge){ const signedIn=!!cloudUser; $('#syncSignedOut').hidden=signedIn; $('#syncSignedIn').hidden=!signedIn; $('#syncBadge').textContent=badge||(signedIn?(cloudNeedsChoice?'ACTION NEEDED':'SYNCED'):'LOCAL ONLY'); $('#syncStatus').textContent=message||(signedIn?'Your progress is connected across devices.':'Your progress is stored on this device until you sign in.'); $('#syncTrigger').textContent=signedIn?(cloudNeedsChoice?'☁ Choose sync':'☁ Synced'):'☁ Sign in to sync'; if($('#syncNow'))$('#syncNow').textContent=cloudNeedsChoice?'Upload this device':'Sync now'; if(signedIn)$('#syncAccount').textContent='Signed in as '+(cloudUser.email||'your account'); }
      function mergeCloudStates(remoteState,localState){const remote=remoteState||{},local=localState||{},merged={...remote,...local,xp:Math.max(local.xp||0,remote.xp||0),correct:Math.max(local.correct||0,remote.correct||0),answered:Math.max(local.answered||0,remote.answered||0)};const history=new Map();[...(remote.progressHistory||[]),...(local.progressHistory||[])].forEach(entry=>{if(!entry?.day)return;const previous=history.get(entry.day);history.set(entry.day,{day:entry.day,units:Math.max(previous?.units||0,entry.units||0)});});if(history.size)merged.progressHistory=[...history.values()].sort((a,b)=>a.day.localeCompare(b.day)).slice(-60);const byWord=new Map(),num=value=>Number.isFinite(Number(value))?Number(value):0,validMeaning=value=>value&&value!=='Definition coming soon';[...(remote.vocab||[]),...(local.vocab||[])].forEach(entry=>{if(!entry?.word)return;let normalized={...entry};let key=vocabularyKey(normalized.word);if(key==='мининмум'){normalized={...normalized,word:'минимум',meaning:'minimum; at least'};key='минимум';}if(key==='элька')return;const previous=byWord.get(key);if(!previous){byWord.set(key,normalized);return;}const previousStamp=Math.max(num(previous.lastReviewAt),num(previous.lastExposureAt)),entryStamp=Math.max(num(normalized.lastReviewAt),num(normalized.lastExposureAt)),latest=entryStamp>=previousStamp?normalized:previous,older=latest===normalized?previous:normalized;const modes={...(older.modeExposures||{})};Object.entries(latest.modeExposures||{}).forEach(([mode,count])=>{modes[mode]=Math.max(modes[mode]||0,count||0);});const latestOrOlder=(field,fallback=0)=>latest[field]!==undefined&&latest[field]!==null?latest[field]:(older[field]!==undefined&&older[field]!==null?older[field]:fallback);const meaning=validMeaning(latest.meaning)?latest.meaning:(validMeaning(older.meaning)?older.meaning:'Definition coming soon');byWord.set(key,{...older,...latest,meaning,status:latest.status||older.status||'new',exposures:Math.max(num(older.exposures),num(latest.exposures)),successes:Math.max(num(older.successes),num(latest.successes)),lapses:Math.max(num(older.lapses),num(latest.lapses)),activeExposures:Math.max(num(older.activeExposures),num(latest.activeExposures)),contextExposures:Math.max(num(older.contextExposures),num(latest.contextExposures)),reps:num(latestOrOlder('reps')),stability:num(latestOrOlder('stability')),easeFactor:num(latestOrOlder('easeFactor',2.5)),difficulty:latestOrOlder('difficulty',.55),reviewsCount:num(latestOrOlder('reviewsCount')),dueAt:num(latestOrOlder('dueAt'))||num(older.dueAt)||Date.now(),lastReviewAt:Math.max(num(older.lastReviewAt),num(latest.lastReviewAt)),lastExposureAt:Math.max(num(older.lastExposureAt),num(latest.lastExposureAt)),modeExposures:modes});});merged.vocab=[...byWord.values()];merged.words=merged.vocab.length;return merged;}
      async function pushCloudState(options={}){ if(!cloudUser||!supabaseClient)return false; if(!cloudReady&&!options.allowBootstrap){setSyncUi('Cloud sync is protected until a cloud record is confirmed.','PROTECTED');return false;} if(options.backup!==false)backupLocalState('before-cloud-upload'); setSyncUi('Syncing your latest practice to the cloud…','SYNCING'); const snapshot=JSON.parse(JSON.stringify(state)); const {error}=await supabaseClient.from('study_state').upsert({user_id:cloudUser.id,state:snapshot,updated_at:new Date().toISOString()},{onConflict:'user_id'}); if(error){setSyncUi('Cloud sync needs attention: '+error.message,'CHECK SETUP');return false;} cloudReady=true;cloudNeedsChoice=false;setSyncUi('Your progress is connected across devices.','SYNCED'); return true; }
@@ -1478,71 +1478,7 @@
   homeTab.onclick=selectHome;
   const topEyebrow=document.querySelector('.topbar .eyebrow');if(topEyebrow)topEyebrow.textContent='Home · Vocabulary · Practice';
   const originalReview=window.reviewWordAnki;
-  if(typeof originalReview==='function')window.reviewWordAnki=function(item,rating){originalReview(item,rating);if(item){item.status=rating==='easy'?'known':rating==='hard'||rating==='good'?'somewhat':'new';save();renderVocabulary();renderHomeDashboard();}};
-  function bindPracticeRatings(){document.querySelectorAll('[data-anki-rate]').forEach(button=>{if(button.dataset.homeRatingBound==='1')return;button.dataset.homeRatingBound='1';button.onclick=()=>{if(button.disabled)return;if(!wordPracticeRevealed){toast('Answer the word twice before rating it.');return;}window.reviewWordAnki(currentPracticeItem(),button.dataset.ankiRate);};});}
-  bindPracticeRatings();new MutationObserver(bindPracticeRatings).observe(document.body,{childList:true,subtree:true});
-  renderHomeDashboard();selectHome();
-})();
-</script>
-<script id="rating-first-srs-patch">
-(function(){
-  if(window.__ratingFirstSrsMode)return;
-  window.__ratingFirstSrsMode=true;
-  const $=selector=>document.querySelector(selector);
-  const intervals={again:60000,hard:10*60000,good:24*60*60000,easy:4*24*60*60000};
-  const labels={again:'1 min',hard:'10 min',good:'1 day',easy:'4 days'};
-  const statusLabel=item=>item?.status==='known'?'Known':item?.status==='somewhat'?'Somewhat known':'Not yet';
-  const queueFor=item=>item&&Array.isArray(ankiRepeatQueue)?ankiRepeatQueue.find(entry=>entry.key===vocabularyKey(item.word)):null;
-  function updateRatingButtons(item){
-    document.querySelectorAll('[data-anki-rate]').forEach(button=>{
-      const rating=button.dataset.ankiRate;
-      button.disabled=!item||!wordPracticeRevealed;
-      const small=button.querySelector('small');
-      if(small&&labels[rating])small.textContent=labels[rating];
-    });
-  }
-  function updatePracticeCopy(item){
-    const description=document.querySelector('#wordPractice .section-head p');
-    if(description)description.textContent='Type the Russian answer, reveal it if needed, then choose when you want to see this word again.';
-    const meta=$('#practiceMeta');
-    if(meta&&item)meta.textContent='Status: '+statusLabel(item)+' · '+(item.exposures||0)+' exposures · '+formatDue(item)+' · Choose a review interval';
-    const count=$('#practiceDueCount');
-    if(count&&item){const due=practicePool().filter(entry=>(entry.dueAt||0)<=Date.now()).length;count.textContent=due+' due now';}
-  }
-  const originalRender=window.renderWordPractice;
-  window.renderWordPractice=function(){
-    if(typeof originalRender==='function')originalRender();
-    const item=typeof currentPracticeItem==='function'?currentPracticeItem():null;
-    updatePracticeCopy(item);
-    updateRatingButtons(item);
-    const check=$('#checkWordPractice'),reveal=$('#showWordPracticeAnswer');
-    if(check)check.onclick=window.checkWordPractice;
-    if(reveal)reveal.onclick=window.revealWordPracticeAnswer;
-    bindRatings();
-  };
-  window.checkWordPractice=function(){
-    const item=currentPracticeItem();
-    if(!item||wordPracticeLocked)return;
-    const input=$('#practiceRussian'),typed=normalizePracticeText(input?.value);
-    if(!typed){$('#practiceFeedback').textContent='Type the Russian word or phrase first, or reveal the answer.';input?.focus();return;}
-    if(!practiceAnswers(item.word).includes(typed)){$('#practiceFeedback').textContent='Not quite — try again, or reveal the answer.';toast('Try again.');return;}
-    wordPracticeLocked=true;wordPracticeAnsweredCorrect=true;wordPracticeRevealed=true;
-    const key=vocabularyKey(item.word),entry=queueFor(item);
-    if(entry){entry.wait=0;entry.correct=2;}else ankiRepeatQueue.push({key,wait:0,correct:2});
-    $('#practiceAnswer').textContent='Russian: '+item.word;$('#practiceAnswer').hidden=false;
-    $('#practiceFeedback').textContent='Correct — now choose Again, Hard, Good, or Easy.';
-    updateRatingButtons(item);updatePracticeCopy(item);updateStats();
-  };
-  window.revealWordPracticeAnswer=function(){
-    const item=currentPracticeItem();if(!item)return;
-    wordPracticeRevealed=true;
-    const key=vocabularyKey(item.word),entry=queueFor(item);
-    if(entry){entry.wait=0;entry.correct=2;}else ankiRepeatQueue.push({key,wait:0,correct:2});
-    $('#practiceAnswer').textContent='Russian: '+item.word;$('#practiceAnswer').hidden=false;
-    $('#practiceFeedback').textContent='Answer shown — choose when this word should return.';
-    updateRatingButtons(item);updatePracticeCopy(item);
-  };
-  window.reviewWordAnki=function(item,rating){
+  if(typeof originalReview==='function')window.reviewWordAnki=async function(item,rating){
     if(!item||!intervals[rating])return;
     const now=Date.now(),key=vocabularyKey(item.word),wait=intervals[rating];
     item.exposures=(item.exposures||0)+1;item.activeExposures=(item.activeExposures||0)+1;item.lastMode='production';item.lastExposureAt=now;item.lastReviewAt=now;
@@ -1553,7 +1489,7 @@
     ankiRepeatQueue=ankiRepeatQueue.filter(entry=>entry.key!==key);
     const next=practicePool().find(entry=>vocabularyKey(entry.word)!==key)||null;
     wordPracticeCurrentKey=next?vocabularyKey(next.word):'';wordPracticeIndex++;
-    save();renderVocabulary();updateStats();
+    await save();renderVocabulary();updateStats();
     $('#practiceFeedback').textContent=(rating==='again'?'Again':rating==='hard'?'Hard':rating==='good'?'Good':'Easy')+' — this word will return in '+labels[rating]+'.';
     renderWordPractice();toast('Review saved · '+item.word+' · next in '+labels[rating]);
   };
@@ -1571,11 +1507,11 @@
   if(window.__durableProgressFallback)return;
   window.__durableProgressFallback=true;
   const DB_NAME='russianSprintDurableProgress',STORE='snapshots',KEY='latest';
-  let hydrated=false,writing=false;
+  let hydrated=false,writeChain=Promise.resolve();
   function openDb(){return new Promise((resolve,reject)=>{if(!window.indexedDB)return reject(new Error('IndexedDB unavailable'));const request=indexedDB.open(DB_NAME,1);request.onupgradeneeded=()=>request.result.createObjectStore(STORE,{keyPath:'id'});request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||new Error('IndexedDB open failed'));});}
   async function readSnapshot(){try{const db=await openDb();return await new Promise((resolve,reject)=>{const request=db.transaction(STORE,'readonly').objectStore(STORE).get(KEY);request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error);});}catch(error){return null;}}
-  async function writeSnapshot(){if(!hydrated||writing||!window.indexedDB||!state?.vocab?.length)return;writing=true;try{const snapshot=JSON.parse(JSON.stringify(state)),db=await openDb();await new Promise((resolve,reject)=>{const request=db.transaction(STORE,'readwrite').objectStore(STORE).put({id:KEY,savedAt:Date.now(),state:snapshot});request.onsuccess=resolve;request.onerror=()=>reject(request.error);});}catch(error){console.warn('Durable progress backup unavailable',error);}finally{writing=false;}}
-  async function recover(){const record=await readSnapshot();if(record?.state?.vocab?.length){try{state=mergeCloudStates(record.state,state);state.words=state.vocab.length;persistLocalState();renderVocabulary();if(typeof renderTriage==='function'&&document.querySelector('#triage'))renderTriage();updateStats();}catch(error){console.warn('Durable progress recovery unavailable',error);}}hydrated=true;writeSnapshot();}
+  function writeSnapshot(){if(!hydrated||!window.indexedDB||!state?.vocab?.length)return writeChain;writeChain=writeChain.then(async()=>{try{const snapshot=JSON.parse(JSON.stringify(state)),db=await openDb();await new Promise((resolve,reject)=>{const request=db.transaction(STORE,'readwrite').objectStore(STORE).put({id:KEY,savedAt:Date.now(),state:snapshot});request.onsuccess=resolve;request.onerror=()=>reject(request.error);});}catch(error){console.warn('Durable progress backup unavailable',error);}});return writeChain;}
+  async function recover(){const record=await readSnapshot();if(record?.state?.vocab?.length){try{state=mergeCloudStates(record.state,state);state.words=state.vocab.length;persistLocalState();renderVocabulary();if(typeof renderTriage==='function'&&document.querySelector('#triage'))renderTriage();updateStats();}catch(error){console.warn('Durable progress recovery unavailable',error);}}hydrated=true;await writeSnapshot();}
   window.__russianSprintWriteDurable=writeSnapshot;
   setTimeout(recover,250);
   setInterval(writeSnapshot,1500);
