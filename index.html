@@ -1697,3 +1697,27 @@
   setTimeout(function(){clearInterval(timer);},30000);
 })();
 </script>
+
+<script id="definition-repair-starayus">
+(function(){
+  const targetMeaning='I try; I am trying; I make an effort';
+  const normalize=function(value){return String(value||'').toLowerCase().replace(/ё/g,'е').replace(/[.,!?;:«»“”"()]/g,'').trim();};
+  const repair=function(){
+    try{
+      if(typeof state==='undefined'||!state||!Array.isArray(state.vocab))return;
+      let changed=false;
+      state.vocab.forEach(function(entry){
+        if(normalize(entry.word)==='стараюсь' && entry.meaning!==targetMeaning){entry.meaning=targetMeaning;changed=true;}
+      });
+      if(!changed)return;
+      if(typeof save==='function')save();
+      if(typeof renderVocabulary==='function')renderVocabulary();
+      if(typeof renderWordPractice==='function')renderWordPractice();
+      if(typeof updateStats==='function')updateStats();
+    }catch(error){}
+  };
+  setTimeout(repair,800);
+  const timer=setInterval(repair,3000);
+  setTimeout(function(){clearInterval(timer);},30000);
+})();
+</script>
