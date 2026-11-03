@@ -1721,3 +1721,58 @@
   setTimeout(function(){clearInterval(timer);},30000);
 })();
 </script>
+
+<script id="definition-repair-reading-word">
+(function(){
+  if(window.__readingWordDefinitionRepairInstalled)return;
+  window.__readingWordDefinitionRepairInstalled=true;
+  const placeholder=function(value){return String(value||'').trim().toLowerCase()==='reading word';};
+  const normalize=function(value){return String(value||'').toLowerCase().replace(/ё/g,'е').replace(/[.,!?;:()«»"…—–-]+/g,' ').replace(/\s+/g,' ').trim();};
+  const fallback={"анна":"Anna","встала":"got up; stood up","рано":"early","открыла":"opened","окно":"window","приготовила":"prepared; made","телефон":"phone","написала":"wrote","сообщение":"message","сообщении":"in the message; about the message","подруге":"to a female friend","пошла":"went; left","мама":"mom; mother","рассказала":"told; recounted","папа":"dad; father","вернулся":"returned; came back","сестра":"sister","поговорили":"talked; had a conversation","пожелали":"wished","спокойной ночи":"good night","квартиру":"apartment; flat","прошлом месяце":"last month","сначала":"at first; initially","мебели":"furniture","стол":"table","стулья":"chairs","удобная":"comfortable; convenient (feminine)","кровать":"bed","нравится":"likes; is pleasing to","сегодня":"today","улице":"outside; on the street","холодно":"cold","идёт":"is going; is falling","дождь":"rain","надел":"put on","зонт":"umbrella","дороге":"on the road; on the way","машин":"cars; of cars","встретил":"met","соседа":"neighbor","заказал":"ordered","суп":"soup","салат":"salad","выбрал":"chose; selected","борщ":"borscht","еда":"food","вкусной":"tasty; delicious (feminine)","сидели":"sat; were sitting","разговаривали":"talked; were talking","каждый":"each; every (masculine)","день":"day","читаю":"I read; I am reading","новые":"new (plural)","слова":"words","слушаю":"I listen; I am listening","короткий":"short","диалог":"dialogue","если":"if","понимаю":"I understand","фразу":"phrase","проверяю":"I check; I am checking","выходные":"weekend","решили":"decided","взяли":"took","немного":"a little; somewhat","еды":"food (genitive)","ключи":"keys","мог":"could; was able to","карманы":"pockets","нигде":"nowhere","оставил":"left; placed","возле":"near; next to","двери":"door; of the door","важная":"important (feminine)","два":"two","часа":"hours; o’clock","боялся":"was afraid","поэтому":"therefore; so","вышел":"went out; left","заранее":"in advance","итоге":"in the end; as a result","пальто":"coat","магазине":"in the store","примерил":"tried on","одно":"one; a single one","удобнее":"more comfortable; more convenient","чек":"receipt","гуляли":"walked; were walking","городу":"around the city; to the city","зашли":"stopped in; entered","маленькое":"small (neuter)","кафе":"café","поездка":"trip","поездке":"trip; on a trip","россию":"Russia (accusative)","голова":"head","голову":"head (accusative)","остался":"stayed; remained","выпил":"drank; finished drinking","воды":"water (genitive)","поспал":"slept; took a nap","стало":"became; got","обеда":"lunch; after lunch","библиотеку":"library (accusative)","искал":"looked for; was searching for","книгу":"book (accusative)","русской":"Russian (feminine/genitive/prepositional)","истории":"history; story","отдел":"section; department","библиотекарь":"librarian","показал":"showed","дорогу":"way; road (accusative)","хочу":"I want","что-нибудь":"something; anything","нашёл":"found","простой":"simple","рецепт":"recipe","начал":"started; began","час":"hour","готов":"ready","субботу":"Saturday (accusative)","центру":"center; toward the center","посмотрел":"looked at; watched","старый":"old","театр":"theater","красивый":"beautiful","парк":"park","тихо":"quietly; it is quiet","скамейке":"on the bench","говорить":"to speak; to talk","помнить":"to remember","который":"which; who; that","какой":"which; what kind of","всё-таки":"still; nevertheless; after all; anyway","написано":"written","написанно":"written","минимум":"minimum; at least","мининмум":"minimum; at least","рассказывать":"to tell; to narrate; to talk about","стараюсь":"I try; I am trying; I make an effort","лёг":"lay down; went to bed","встречается":"meets; encounters; occurs; is found","встретиться":"to meet","принимать":"to accept; to receive; to take","принимать / принять":"to accept; to receive (imperfective / perfective)"};
+  const resolve=function(term){
+    const candidates=[String(term||'')];
+    try{if(typeof wordFixes!=='undefined'){const fixed=wordFixes.get(normalize(term));if(fixed)candidates.unshift(fixed);}}catch(error){}
+    for(const candidate of candidates){
+      try{if(typeof definitionFixes!=='undefined'){const exact=definitionFixes.get(normalize(candidate));if(exact&&!placeholder(exact))return exact;}}catch(error){}
+      try{if(typeof readingGlosses!=='undefined'){const gloss=readingGlosses[readingKey(candidate)];if(gloss&&!placeholder(gloss))return gloss;}}catch(error){}
+      const local=fallback[normalize(candidate)];if(local&&!placeholder(local))return local;
+      try{
+        if(typeof initialVocabulary!=='undefined'&&Array.isArray(initialVocabulary)){
+          const seed=initialVocabulary.find(function(item){return normalize(item&&item.word)===normalize(candidate)&&item.meaning&&!placeholder(item.meaning)&&item.meaning!=='Definition coming soon';});
+          if(seed)return seed.meaning;
+        }
+      }catch(error){}
+    }
+    return '';
+  };
+  const repair=function(){
+    try{
+      if(typeof state==='undefined'||!state||!Array.isArray(state.vocab))return;
+      let changed=false;
+      state.vocab.forEach(function(entry){
+        if(!entry||!placeholder(entry.meaning))return;
+        const meaning=resolve(entry.word);
+        if(meaning){entry.meaning=meaning;changed=true;}
+      });
+      if(changed){
+        if(typeof save==='function')save();
+        if(typeof renderVocabulary==='function')renderVocabulary();
+        if(typeof renderWordPractice==='function')renderWordPractice();
+        if(typeof updateStats==='function')updateStats();
+      }
+    }catch(error){}
+  };
+  try{
+    const originalEnsureVocab=ensureVocab;
+    ensureVocab=function(term,meaning){
+      const resolved=resolve(term);
+      const item=originalEnsureVocab(term,resolved||meaning);
+      if(item&&placeholder(item.meaning)){const fixed=resolve(item.word||term);if(fixed)item.meaning=fixed;}
+      return item;
+    };
+  }catch(error){}
+  setTimeout(repair,500);
+  const timer=setInterval(repair,2500);
+  setTimeout(function(){clearInterval(timer);},30000);
+})();
+</script>
