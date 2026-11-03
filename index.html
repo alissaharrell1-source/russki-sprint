@@ -1776,3 +1776,53 @@
   setTimeout(function(){clearInterval(timer);},30000);
 })();
 </script>
+
+<script id="definition-repair-prishel">
+(function(){
+  if(window.__readingWordNormalizedRepair)return;
+  window.__readingWordNormalizedRepair=true;
+  const normalize=function(value){return String(value||'').toLowerCase().replace(/ё/g,'е').replace(/[.,!?;:()«»"…—–-]+/g,' ').replace(/\s+/g,' ').trim();};
+  const placeholder=function(value){return normalize(value)==='reading word';};
+  const resolve=function(term){
+    const key=normalize(term);
+    if(key==='пришел')return 'came; arrived';
+    try{
+      if(typeof definitionFixes!=='undefined'){
+        for(const [word,meaning] of definitionFixes.entries())if(normalize(word)===key&&meaning&&!placeholder(meaning))return meaning;
+      }
+      if(typeof readingGlosses!=='undefined'){
+        for(const word of Object.keys(readingGlosses))if(normalize(word)===key&&readingGlosses[word]&&!placeholder(readingGlosses[word]))return readingGlosses[word];
+      }
+    }catch(error){}
+    return '';
+  };
+  const repair=function(){
+    try{
+      if(typeof state==='undefined'||!state||!Array.isArray(state.vocab))return;
+      let changed=false;
+      state.vocab.forEach(function(entry){
+        if(!entry||!placeholder(entry.meaning))return;
+        const meaning=resolve(entry.word);
+        if(meaning){entry.meaning=meaning;changed=true;}
+      });
+      if(changed){
+        if(typeof save==='function')save();
+        if(typeof renderVocabulary==='function')renderVocabulary();
+        if(typeof renderWordPractice==='function')renderWordPractice();
+        if(typeof updateStats==='function')updateStats();
+      }
+    }catch(error){}
+  };
+  try{
+    const originalEnsureVocab=ensureVocab;
+    ensureVocab=function(term,meaning){
+      const item=originalEnsureVocab(term,resolve(term)||meaning);
+      if(item&&placeholder(item.meaning)){const fixed=resolve(item.word||term);if(fixed)item.meaning=fixed;}
+      return item;
+    };
+  }catch(error){}
+  setTimeout(repair,500);
+  const timer=setInterval(repair,2500);
+  setTimeout(function(){clearInterval(timer);},30000);
+})();
+</script>
