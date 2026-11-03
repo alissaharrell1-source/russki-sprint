@@ -1177,3 +1177,63 @@
   setTimeout(function(){if(typeof renderWordPractice==='function')renderWordPractice();},250);
 })();
 </script>
+
+<script id="practice-bank-final-guard">
+(function(){
+  if(window.__practiceBankFinalGuard)return;
+  window.__practiceBankFinalGuard=true;
+  document.documentElement.setAttribute('data-practice-bank-fix','on');
+  function keyOf(value){try{return vocabularyKey(value);}catch(error){return String(value||'').toLowerCase().replace(/ё/g,'е').replace(/ +/g,' ').trim();}}
+  var base=(typeof initialVocabulary!=='undefined'&&Array.isArray(initialVocabulary))?initialVocabulary:[];
+  var coreKeys=Object.create(null);
+  base.forEach(function(item){var key=keyOf(item&&item.word);if(key)coreKeys[key]=true;});
+  if(!Object.keys(coreKeys).length)return;
+  function isCore(item){return !!item&&!!coreKeys[keyOf(item.word)];}
+  function isValid(item){var meaning=String(item&&item.meaning||'').trim().toLowerCase();return isCore(item)&&item.word&&meaning&&meaning!=='definition coming soon'&&meaning!=='reading word';}
+  function dueSort(a,b){return (a.dueAt||0)-(b.dueAt||0)||(a.exposures||0)-(b.exposures||0);}
+  function quarantine(){
+    if(!state||!Array.isArray(state.vocab))return;
+    var changed=false;
+    state.vocab.forEach(function(item){if(!item||isCore(item))return;if(item.practiceExcluded!==true){item.practiceExcluded=true;changed=true;}if(item.dueAt!==9999999999999){item.dueAt=9999999999999;changed=true;}});
+    if(changed&&typeof save==='function')save();
+  }
+  function pool(){
+    var now=Date.now();
+    return state.vocab.filter(isValid).sort(function(a,b){var aDue=(a.dueAt||0)<=now,bDue=(b.dueAt||0)<=now,aReviewed=(a.exposures||0)>0||!!a.lastReviewAt||!!a.reps,bReviewed=(b.exposures||0)>0||!!b.lastReviewAt||!!b.reps,aBucket=aDue?(aReviewed?0:1):2,bBucket=bDue?(bReviewed?0:1):2;if(aBucket!==bBucket)return aBucket-bBucket;return dueSort(a,b);});
+  }
+  window.practicePool=pool;
+  try{practicePool=pool;}catch(error){}
+  function current(){
+    quarantine();
+    ankiRepeatQueue=ankiRepeatQueue.filter(function(entry){return !!coreKeys[entry.key];});
+    var now=Date.now(),ready=ankiRepeatQueue.find(function(entry){return entry.wait<=0;});
+    var item=wordPracticeCurrentKey?state.vocab.find(function(entry){return isValid(entry)&&keyOf(entry.word)===wordPracticeCurrentKey;}):null;
+    if(!item&&ready)item=state.vocab.find(function(entry){return isValid(entry)&&keyOf(entry.word)===ready.key;});
+    if(!item)item=state.vocab.filter(function(entry){return isValid(entry)&&(entry.dueAt||0)<=now;}).sort(dueSort)[0]||state.vocab.filter(function(entry){return isValid(entry)&&(entry.exposures||0)<=0;}).sort(dueSort)[0]||pool()[0]||null;
+    wordPracticeCurrentKey=item?keyOf(item.word):'';
+    return item;
+  }
+  window.currentPracticeItem=current;
+  try{currentPracticeItem=current;}catch(error){}
+  var oldRender=window.renderWordPractice;
+  if(typeof oldRender==='function'){
+    var render=function(){quarantine();if(wordPracticeCurrentKey&&!isValid(state.vocab.find(function(item){return keyOf(item.word)===wordPracticeCurrentKey;})))wordPracticeCurrentKey='';oldRender();var labels={again:'1 min',hard:'10 min',good:'1 day',easy:'4 days'};Object.keys(labels).forEach(function(rating){var small=document.querySelector('[data-anki-rate="'+rating+'"] small');if(small)small.textContent=labels[rating];});};
+    window.renderWordPractice=render;
+    try{renderWordPractice=render;}catch(error){}
+  }
+  var oldReview=window.reviewWordAnki;
+  if(typeof oldReview==='function'&&!oldReview.__practiceBankFinalReview){
+    var wrapped=function(item,rating){
+      if(!isValid(item))return;
+      var key=keyOf(item.word),started=Date.now(),result=oldReview(item,rating),delays={again:60000,hard:600000,good:86400000,easy:345600000};
+      return Promise.resolve(result).then(function(){var saved=state.vocab.find(function(entry){return keyOf(entry.word)===key;});if(saved&&delays[rating]){saved.dueAt=started+delays[rating];saved.lastReviewAt=Math.max(saved.lastReviewAt||0,started);}var savedResult=typeof save==='function'?save():null;return Promise.resolve(savedResult).then(function(){wordPracticeCurrentKey='';if(typeof renderWordPractice==='function')renderWordPractice();});});
+    };
+    wrapped.__practiceBankFinalReview=true;
+    window.reviewWordAnki=wrapped;
+    try{reviewWordAnki=wrapped;}catch(error){}
+  }
+  quarantine();
+  setInterval(quarantine,1500);
+  setTimeout(function(){if(typeof renderWordPractice==='function')renderWordPractice();},250);
+})();
+</script>
