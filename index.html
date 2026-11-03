@@ -1090,739 +1090,90 @@
     let shortPromptIndex=0,shortPromptQuery='';
     function filteredShortPrompts(){const query=shortPromptQuery.trim().toLowerCase();return shortPassages.filter(prompt=>!query||(prompt.ru+' '+prompt.english+' '+prompt.focus).toLowerCase().includes(query));}
     function ensureShortPromptLibrary(){if($('#shortPromptLibrary'))return;const anchor=$('#writingStudio');if(!anchor)return;const section=document.createElement('section');section.className='prompt-library';section.id='shortPromptLibrary';section.innerHTML='<div class="prompt-library-head"><div><div class="eyebrow">Short reading passages</div><h2>500 short passages</h2><p>Read through 500 mini-passages built from your active vocabulary. Each one gives you a little more context than a single sentence. Click any word for its meaning, pronunciation, status, and context.</p></div><span class="pill">500 PASSAGES</span></div><div class="prompt-library-controls"><input class="prompt-library-search" id="shortPromptSearch" placeholder="Search the Russian or English passages" aria-label="Search short passages" /><button class="secondary" id="shortPromptPrevious">← Previous</button><button class="secondary" id="shortPromptNext">Next →</button></div><div class="short-prompt-card"><small id="shortPromptIndex">Passage 1 of 500</small><div class="short-prompt-russian" id="shortPromptRussian"></div><div class="short-prompt-english" id="shortPromptEnglish"></div><div class="short-prompt-meta" id="shortPromptMeta"></div><div class="short-prompt-actions"><button class="primary" id="shortPromptSpeaker">🔊 Play passage</button><button class="secondary" id="shortPromptWrite">Practice writing the sentence →</button></div></div><div class="prompt-card-list" id="shortPromptList"></div></section>';anchor.after(section);$('#shortPromptSearch').oninput=()=>{shortPromptQuery=$('#shortPromptSearch').value;shortPromptIndex=0;renderShortPromptLibrary();};$('#shortPromptPrevious').onclick=()=>{const list=filteredShortPrompts();shortPromptIndex=(shortPromptIndex-1+list.length)%list.length;renderShortPromptLibrary();};$('#shortPromptNext').onclick=()=>{const list=filteredShortPrompts();shortPromptIndex=(shortPromptIndex+1)%list.length;renderShortPromptLibrary();};$('#shortPromptWrite').onclick=()=>{const list=filteredShortPrompts();const item=list[shortPromptIndex%list.length];writingIndex=item.sourceIndex;renderWriting();$('#writingStudio').scrollIntoView({behavior:'smooth',block:'start'});};renderShortPromptLibrary();}
-    function renderShortPromptLibrary(){ensureShortPromptLibrary();const list=filteredShortPrompts();if(!list.length){$('#shortPromptIndex').textContent='No matching passages';$('#shortPromptRussian').textContent='Try another search.';$('#shortPromptEnglish').textContent='';$('#shortPromptMeta').innerHTML='';$('#shortPromptList').innerHTML='';return;}shortPromptIndex=((shortPromptIndex%list.length)+list.length)%list.length;const prompt=list[shortPromptIndex];$('#shortPromptIndex').textContent='Passage '+(shortPromptIndex+1)+' of '+list.length+' · '+prompt.title;$('#shortPromptRussian').innerHTML=interactivePassage(prompt.ru);$('#shortPromptEnglish').textContent=prompt.english;$('#shortPromptMeta').innerHTML='<span>'+prompt.focus+'</span><span>Read · listen · notice</span>';$('#shortPromptSpeaker').onclick=()=>speak(prompt.ru);const visible=list.slice(Math.max(0,shortPromptIndex-3),Math.min(list.length,shortPromptIndex+9));$('#shortPromptList').innerHTML=visible.map(item=>{const absolute=list.indexOf(item);return '<button type="button" class="short-prompt-list-item '+(item===prompt?'active':'')+'" data-prompt-index="'+absolute+'"><strong>'+escapeHtml(item.ru)+'</strong><small>'+escapeHtml(item.english)+'</small></button>';}).join('');$('#shortPromptList').querySelectorAll('[data-prompt-index]').forEach(button=>button.onclick=()=>{shortPromptIndex=Number(button.dataset.promptIndex);renderShortPromptLibrary();});}
-    const longStories=[
-      {title:'A day that changed plans',focus:'мне пришлось · работа · поездка',ru:'Утром мне пришлось изменить свои планы. Я собирался поехать в другой город, но на работе появился важный проект. Сначала я проверил документы и позвонил другу. Потом мы встретились в кафе и поговорили о том, что делать дальше.\n\nВечером я вернулся домой, приготовил ужин и написал сообщение семье. День был длинным, но я многое сделал. Иногда неожиданные планы помогают нам найти новый вариант.',en:'In the morning I had to change my plans. I was planning to go to another city, but an important project appeared at work. First I checked the documents and called a friend. Then we met in a café and talked about what to do next.\n\nIn the evening I returned home, made dinner, and wrote a message to my family. The day was long, but I accomplished a lot. Sometimes unexpected plans help us find a new option.'},
-      {title:'The missing ticket',focus:'проверить · найти · вокзал',ru:'Перед отъездом я проверил сумку, карманы и документы. Всё необходимое было на месте, но билета я не нашёл. Я начал искать его снова и снова. Наконец я вспомнил, что положил билет в книгу.\n\nНа вокзале я встретил подругу. Поезд уже приехал, поэтому нам пришлось быстро войти в вагон. Мы нашли свои места, улыбнулись друг другу и поехали дальше.',en:'Before leaving, I checked my bag, pockets, and documents. Everything necessary was there, but I could not find my ticket. I started looking for it again and again. Finally I remembered that I had put the ticket in a book.\n\nAt the station I met a female friend. The train had already arrived, so we had to get into the train car quickly. We found our seats, smiled at each other, and continued on our way.'},
-      {title:'A new neighbor',focus:'встретиться · говорить · город',ru:'В новом городе я сначала чувствовал себя одиноко. Я не знал, где находится ближайший магазин, и часто возвращался домой слишком поздно. Однажды я встретился с соседом у подъезда. Он поздоровался и спросил, откуда я.\n\nМы долго говорили по-русски. Он показал мне парк, почту и маленькое кафе. Теперь я знаю этот район намного лучше. У меня появился новый знакомый, а город стал немного ближе.',en:'In a new city I felt lonely at first. I did not know where the nearest shop was, and I often returned home too late. One day I met a neighbor near the entrance. He said hello and asked where I was from.\n\nWe spoke Russian for a long time. He showed me the park, the post office, and a small café. Now I know this neighborhood much better. I have a new acquaintance, and the city feels a little closer.'},
-      {title:'The evening routine',focus:'обычно · готовить · помнить',ru:'Обычно после работы я сразу иду домой. Я снимаю куртку, кладу ключи в карман и готовлю чай. Пока вода кипит, я вспоминаю всё, что произошло за день. Иногда я звоню семье, а иногда просто слушаю музыку.\n\nПотом я читаю несколько страниц книги и повторяю новые слова. Мне нравится эта спокойная привычка. Она помогает мне помнить русский язык и чувствовать, что я каждый день двигаюсь вперёд.',en:'Usually after work I go straight home. I take off my jacket, put my keys in my pocket, and make tea. While the water boils, I remember everything that happened during the day. Sometimes I call my family, and sometimes I simply listen to music.\n\nThen I read a few pages of a book and review new words. I like this calm habit. It helps me remember Russian and feel that I move forward every day.'}
-    ];
-    let longStoryIndex=0;
-    function ensureLongStoryLibrary(){if($('#longStoryLibrary'))return;const anchor=$('#shortPromptLibrary');if(!anchor)return;const section=document.createElement('section');section.className='long-story-library';section.id='longStoryLibrary';section.innerHTML='<div class="story-header"><div><div class="eyebrow">Long stories</div><h2 id="longStoryTitle">Stories from your word bank</h2><p>Longer reading practice that brings known and somewhat-known words together in a connected scene.</p></div><span class="pill">STORY 1 OF '+longStories.length+'</span></div><div class="story-meta" id="longStoryMeta"></div><div class="story-text" id="longStoryText"></div><div class="long-story-translation" id="longStoryTranslation"></div><div class="long-story-controls"><button class="primary" id="longStorySpeaker">🔊 Play story</button><button class="secondary" id="longStoryToggle">Hide translation</button><button class="secondary" id="longStoryNext">New story →</button></div>';anchor.after(section);$('#longStoryToggle').onclick=()=>{const translation=$('#longStoryTranslation');translation.classList.toggle('hidden');$('#longStoryToggle').textContent=translation.classList.contains('hidden')?'Show translation':'Hide translation';};$('#longStoryNext').onclick=()=>{longStoryIndex=(longStoryIndex+1)%longStories.length;renderLongStory();toast('New long story.');};renderLongStory();}
-    function renderLongStory(){ensureLongStoryLibrary();const story=longStories[longStoryIndex%longStories.length];$('#longStoryTitle').textContent=story.title;$('#longStoryLibrary .pill').textContent='STORY '+(longStoryIndex%longStories.length+1)+' OF '+longStories.length;$('#longStoryMeta').innerHTML='<span>'+story.focus+'</span><span>Click words for details</span>';$('#longStoryText').innerHTML=story.ru.split(/(\n\n)/).map(part=>part==='\n\n'?'<br><br>':interactivePassage(part)).join('');$('#longStoryTranslation').textContent=story.en;$('#longStoryTranslation').classList.remove('hidden');$('#longStoryToggle').textContent='Hide translation';$('#longStorySpeaker').onclick=()=>speak(story.ru);}
-    const listeningPrompts=[
-      {title:'Daily routine',ru:'Мне пришлось ждать.',en:'I had to wait.',target:'мне пришлось',focus:'мне пришлось · ждать',answers:['мне пришлось ждать','мне пришлось подождать']},
-      {title:'Work and plans',ru:'Я работаю над новым проектом.',en:'I am working on a new project.',target:'проект',focus:'работать · новый · проект',answers:['я работаю над новым проектом']},
-      {title:'Travel',ru:'Я проверил свой билет.',en:'I checked my ticket.',target:'билет',focus:'проверить · свой · билет',answers:['я проверил свой билет','я проверила свой билет']},
-      {title:'At home',ru:'После работы я иду домой.',en:'After work I am going home.',target:'домой',focus:'после работы · идти · домой',answers:['после работы я иду домой']}
-    ];
-    let listeningIndex=0,listeningChecked=false,speakingChecked=false;
-    function ensureListeningSpeaking(){if($('#listening'))return;const reading=document.querySelector('#reading');if(!reading)return;const section=document.createElement('section');section.className='view';section.id='listening';section.innerHTML='<div class="section-head" style="margin-top:0"><div><div class="eyebrow">Listening & speaking</div><h2>Hear it, then say it</h2><p>Listen for a useful Russian sentence, notice the sound, and produce it yourself.</p></div><span class="pill">LISTEN · SHADOW · SPEAK</span></div><div class="listen-speak-grid"><div class="panel"><div class="eyebrow">Listening</div><h2 id="listeningTitle" style="margin-top:9px">Hear the sentence</h2><div class="audio-target"><div class="audio-target-ru" id="listeningRussian"></div><div class="audio-target-en" id="listeningEnglish" hidden></div></div><div class="reading-actions"><button class="primary" id="playListening">🔊 Play Russian</button><button class="secondary" id="revealListening">Show meaning</button></div><div class="listening-feedback" id="listeningFeedback" aria-live="polite"></div><button class="secondary" id="markListening">I understood it ✓</button></div><div class="panel"><div class="eyebrow">Speaking</div><h2 style="margin-top:9px">Say it yourself</h2><div class="speaking-cue" id="speakingEnglish"></div><div class="reading-actions"><button class="primary" id="startSpeaking">🎙️ Start speaking</button><button class="secondary" id="speakModel">🔊 Hear model</button></div><input class="speech-transcript" id="speechTranscript" aria-label="Russian speaking transcript" placeholder="Your Russian will appear here…" /><div class="speech-status" id="speechStatus">Say the Russian sentence aloud. You can also type what you said.</div><button class="secondary" id="checkSpeaking">Check my speaking</button></div></div><div class="section-head"><div><h2 id="listeningFocusTitle">Target words</h2><p id="listeningFocus"></p></div><button class="secondary" id="newListening">New sentence →</button></div></section>';reading.parentElement.insertBefore(section,reading);$('#playListening').onclick=()=>{const item=listeningPrompts[listeningIndex%listeningPrompts.length];speak(item.ru);};$('#revealListening').onclick=()=>{$('#listeningEnglish').hidden=!$('#listeningEnglish').hidden;$('#revealListening').textContent=$('#listeningEnglish').hidden?'Show meaning':'Hide meaning';};$('#markListening').onclick=()=>{const item=listeningPrompts[listeningIndex%listeningPrompts.length];recordExposure(item.target,true,'listening');state.xp+=5;save();updateStats();$('#listeningFeedback').textContent='Nice listening. You caught the sentence.';toast('+5 XP · Listening logged.');};$('#speakModel').onclick=()=>{const item=listeningPrompts[listeningIndex%listeningPrompts.length];speak(item.ru);};$('#startSpeaking').onclick=startSpeaking;$('#checkSpeaking').onclick=checkSpeaking;$('#newListening').onclick=()=>{listeningIndex=(listeningIndex+1)%listeningPrompts.length;renderListeningSpeaking();toast('New listening and speaking sentence.');};}
-    function configureListeningAudioOnly(){ensureListeningSpeaking();const russian=$('#listeningRussian');const meaning=$('#listeningEnglish');const reveal=$('#revealListening');if(russian)russian.style.display='none';if(meaning)meaning.style.display='none';if(reveal)reveal.style.display='none';const listeningTitle=$('#listeningTitle');if(listeningTitle)listeningTitle.style.display='none';const speakingTitle=document.querySelector('#listening .listen-speak-grid .panel:nth-child(2) h2');if(speakingTitle)speakingTitle.style.display='none';const target=$('#listening .audio-target');if(target&&!$('#listeningAudioHint')){const hint=document.createElement('div');hint.className='audio-target-en';hint.id='listeningAudioHint';hint.textContent='Press play, then type exactly what you hear.';target.appendChild(hint);}let check=$('#checkListening')||$('#markListening');if(check){check.id='checkListening';check.textContent='Check what I heard';check.onclick=checkListening;}if(!$('#listeningTranscript')){const input=document.createElement('input');input.className='speech-transcript';input.id='listeningTranscript';input.setAttribute('aria-label','Type what you heard in Russian');input.placeholder='Type the Russian you heard…';$('#listeningFeedback').parentElement.insertBefore(input,$('#listeningFeedback'));}}
-    function renderListeningSpeaking(){ensureListeningSpeaking();configureListeningAudioOnly();const item=listeningPrompts[listeningIndex%listeningPrompts.length];listeningChecked=false;speakingChecked=false;$('#listeningTitle').textContent=item.title;$('#listeningRussian').textContent=item.ru;$('#listeningEnglish').textContent=item.en;$('#listeningEnglish').hidden=true;$('#listeningFeedback').textContent='';$('#listeningTranscript').value='';$('#speakingEnglish').textContent=item.en;$('#listeningFocus').textContent=item.focus;$('#speechTranscript').value='';$('#speechStatus').textContent='Say the Russian sentence aloud. You can also type what you said.';}
-    function checkListening(){const item=listeningPrompts[listeningIndex%listeningPrompts.length];const answer=normalize($('#listeningTranscript').value);if(!answer){$('#listeningFeedback').textContent='Type what you heard first.';return;}const correct=item.answers.some(expected=>normalize(expected)===answer);if(correct){$('#listeningFeedback').textContent='Correct — you heard the sentence.';if(!listeningChecked){listeningChecked=true;recordExposure(item.target,true,'listening');state.xp+=10;save();updateStats();toast('+10 XP · Listening retrieval.');}}else{$('#listeningFeedback').textContent='Not quite. Play the audio again and listen for the endings.';} }
-    function checkSpeaking(){const item=listeningPrompts[listeningIndex%listeningPrompts.length];const answer=normalize($('#speechTranscript').value);if(!answer){$('#speechStatus').textContent='Say or type your Russian sentence first.';return;}const correct=item.answers.some(expected=>normalize(expected)===answer);if(correct){$('#speechStatus').textContent='Correct — your Russian matched the model.';if(!speakingChecked){speakingChecked=true;recordExposure(item.target,true,'speaking');state.xp+=10;save();updateStats();toast('+10 XP · Speaking retrieval.');}}else{$('#speechStatus').textContent='Keep going. Listen to the model and try the sentence again.';} }
-    function removeListeningIntro(){const intro=document.querySelector('#listening > .section-head');if(intro)intro.remove();}
-    function startSpeaking(){if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){ $('#speechStatus').textContent='Speech recognition is not available here. Say it aloud, then type what you said or use Hear model.';return;}const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;const rec=new Recognition();rec.lang='ru-RU';rec.interimResults=false;rec.onstart=()=>$('#speechStatus').textContent='Listening for your Russian…';rec.onresult=event=>{$('#speechTranscript').value=event.results[0][0].transcript;checkSpeaking();};rec.onerror=()=>$('#speechStatus').textContent='I could not catch that. Try again or type what you said.';rec.start();}
-    let activeFocus='core', passageIndex=0;
-    function renderFocusedPassage(){ const item=focusSets[activeFocus][passageIndex%focusSets[activeFocus].length]; ensureReadingWordTools(); $('#readingSet').textContent=item.tag; $('#passageText').innerHTML=interactivePassage(item.text); $('#readingWordTools').hidden=true; $('#passageTranslation').textContent=item.translation; $('#passageTranslation').classList.remove('hidden'); $('#toggleTranslation').textContent='Hide translation'; $('#readingSpeaker').onclick=()=>speak(item.text); $('#readingFeedback').textContent=''; $('#readingChoices').innerHTML=item.options.map(option=>'<button class="choice">'+option+'</button>').join(''); $('#readingChoices').querySelectorAll('.choice').forEach(button=>button.onclick=()=>{if(button.classList.contains('correct')||button.classList.contains('wrong'))return;if(button.textContent===item.answer){button.classList.add('correct');$('#readingFeedback').textContent='Correct — you caught the main idea.';state.xp+=10;toast('+10 XP · Reading understood.');}else{button.classList.add('wrong');$('#readingFeedback').textContent='Try again. Look for the detail connected to the focus.';}save();updateStats();}); }
-    const focusInfo={core:['FOUNDATIONS','Greetings, introductions, everyday needs, family, food, places, and basic movement.'],daily:['UNIT 1 · DAILY LIFE','Daily routines, work, lateness, family, meals, and useful expressions from the early Accelerator 2 lessons.'],routines:['UNIT 3 · ROUTINES & WORK','Sleep, meals, projects, stress, documents, and what happens when plans do not go smoothly.'],travel:['UNIT 4 · TRAINS & TRAVEL','Stations, tickets, train cars, destinations, timing, and practical travel language.']};
-    $('#focusSelect').onchange=()=>{ const [chip,summary]=focusInfo[$('#focusSelect').value]; $('#focusChip').textContent=chip; $('#focusSummary').textContent=summary; };
-    $('#applyFocus').onclick=()=>{ activeFocus=$('#focusSelect').value; passageIndex=0; renderFocusedPassage(); toast('Focus applied to reading practice.'); };
-    document.querySelectorAll('#focus [data-view]').forEach(btn=>btn.addEventListener('click',()=>showView(btn.dataset.view)));
-    function renderPassage(){ const item=passages[passageIndex]; ensureReadingWordTools(); $('#readingSet').textContent=item.tag; $('#passageText').innerHTML=interactivePassage(item.text); $('#readingWordTools').hidden=true; $('#passageTranslation').textContent=item.translation; $('#passageTranslation').classList.remove('hidden'); $('#toggleTranslation').textContent='Hide translation'; $('#readingSpeaker').onclick=()=>speak(item.text); $('#readingFeedback').textContent=''; $('#readingChoices').innerHTML=item.options.map(option=>'<button class="choice">'+option+'</button>').join(''); $('#readingChoices').querySelectorAll('.choice').forEach(button=>button.onclick=()=>{ if(button.classList.contains('correct')||button.classList.contains('wrong'))return; if(button.textContent===item.answer){button.classList.add('correct');$('#readingFeedback').textContent='Correct — you caught the main idea.';state.xp+=10;toast('+10 XP · Reading understood.');}else{button.classList.add('wrong');$('#readingFeedback').textContent='Try again. Look for the reason connected to the target phrase.';}save();updateStats(); }); }
-    $('#toggleTranslation').onclick=()=>{ const t=$('#passageTranslation'); t.classList.toggle('hidden'); $('#toggleTranslation').textContent=t.classList.contains('hidden')?'Show translation':'Hide translation'; };
-    $('#nextPassage').onclick=()=>{passageIndex=(passageIndex+1)%passages.length;renderPassage();toast('New passage · same focus, new context.');};
-    $('#markReading').onclick=()=>{state.xp+=5;recordExposure('мне пришлось',true,'reading',{active:false});updateStats();toast('+5 XP · Reading exposure logged.');};
-    const grammarCases={
-      nominative:{label:'Именительный падеж',name:'Nominative · Именительный',questions:'кто? что? · who? what?',prompts:[{base:'Маша',prompt:'___ читает книгу.',answer:'Маша'},{base:'Иван',prompt:'___ — мой друг.',answer:'Иван'}]},
-      accusative:{label:'Винительный падеж',name:'Accusative · Винительный',questions:'кого? что? · whom? what?',prompts:[{base:'друг',prompt:'Я вижу ___.',answer:'друга'},{base:'билет',prompt:'Она покупает ___.',answer:'билет'}]},
-      genitive:{label:'Родительный падеж',name:'Genitive · Родительный',questions:'кого? чего? · whose? of what?',prompts:[{base:'время',prompt:'У меня нет ___.',answer:'времени'},{base:'брат',prompt:'Это машина ___.',answer:'брата'}]},
-      dative:{label:'Дательный падеж',name:'Dative · Дательный',questions:'кому? чему? · to whom? to what?',prompts:[{base:'я',prompt:'___ пришлось ждать.',answer:'мне'},{base:'они',prompt:'___ пришлось остаться дома.',answer:'им'}]},
-      instrumental:{label:'Творительный падеж',name:'Instrumental · Творительный',questions:'кем? чем? · with whom? with what?',prompts:[{base:'друг',prompt:'Я иду с ___.',answer:'другом'},{base:'врач',prompt:'Она работает ___.',answer:'врачом'}]},
-      prepositional:{label:'Предложный падеж',name:'Prepositional · Предложный',questions:'о ком? о чём? где? · about whom? where?',prompts:[{base:'работа',prompt:'Я думаю о ___.',answer:'работе'},{base:'Москва',prompt:'Она живёт в ___.',answer:'Москве'}]}
-     };
-     const grammarNounForms=[
-       ['дом','дом','дом','дома','дому','доме','домом'],['город','город','город','города','городу','городе','городом'],['стол','стол','стол','стола','столу','столе','столом'],['брат','брат','брата','брата','брату','брате','братом'],['друг','друг','друга','друга','другу','друге','другом'],['студент','студент','студента','студента','студенту','студенте','студентом'],['учитель','учитель','учителя','учителя','учителю','учителе','учителем'],['врач','врач','врача','врача','врачу','враче','врачом'],['сын','сын','сына','сына','сыну','сыне','сыном'],['отец','отец','отца','отца','отцу','отце','отцом'],['вечер','вечер','вечер','вечера','вечеру','вечере','вечером'],['день','день','день','дня','дню','дне','днём'],['год','год','год','года','году','годе','годом'],['язык','язык','язык','языка','языку','языке','языком'],['вопрос','вопрос','вопрос','вопроса','вопросу','вопросе','вопросом'],['ответ','ответ','ответ','ответа','ответу','ответе','ответом'],['парк','парк','парк','парка','парку','парке','парком'],['магазин','магазин','магазин','магазина','магазину','магазине','магазином'],['путь','путь','путь','пути','пути','пути','путём'],['телефон','телефон','телефон','телефона','телефону','телефоне','телефоном'],['книга','книга','книгу','книги','книге','книге','книгой'],['работа','работа','работу','работы','работе','работе','работой'],['машина','машина','машину','машины','машине','машине','машиной'],['школа','школа','школу','школы','школе','школе','школой'],['комната','комната','комнату','комнаты','комнате','комнате','комнатой'],['неделя','неделя','неделю','недели','неделе','неделе','неделей'],['семья','семья','семью','семьи','семье','семье','семьёй'],['мама','мама','маму','мамы','маме','маме','мамой'],['девушка','девушка','девушку','девушки','девушке','девушке','девушкой'],['улица','улица','улицу','улицы','улице','улице','улицей'],['окно','окно','окно','окна','окну','окне','окном'],['море','море','море','моря','морю','море','морем'],['слово','слово','слово','слова','слову','слове','словом'],['письмо','письмо','письмо','письма','письму','письме','письмом'],['место','место','место','места','месту','месте','местом'],['время','время','время','времени','времени','времени','временем'],['поле','поле','поле','поля','полю','поле','полем'],['здание','здание','здание','здания','зданию','здании','зданием'],['имя','имя','имя','имени','имени','имени','именем'],['платье','платье','платье','платья','платью','платье','платьем']
-     ];
-     const grammarCaseFrames={nominative:['___ уже здесь.','___ выглядит знакомо.','Сегодня ___ особенно важно.','___ находится рядом.','Я думаю, что ___ поможет.'],accusative:['Я вижу ___.','Мы покупаем ___.','Она читает ___.','Он ищет ___.','Я хочу взять ___.'],genitive:['У меня нет ___.','Это цвет ___.','Мы ждём начала ___.','Он боится ___.','После ___ мы пойдём домой.'],dative:['Я подхожу к ___.','Мы идём к ___.','Она помогает ___.','Это подарок ___.','Я доверяю ___.'],instrumental:['Я иду с ___.','Мы говорим с ___.','Она интересуется ___.','Он гордится ___.','Мы пользуемся ___.'],prepositional:['Мы говорим о ___.','Я думаю о ___.','Книга рассказывает о ___.','Мы читаем о ___.','Она пишет о ___.']};
-     const grammarCaseIndexes={nominative:1,accusative:2,genitive:3,dative:4,prepositional:5,instrumental:6};
-     Object.entries(grammarCaseIndexes).forEach(([caseKey,formIndex])=>{const frames=grammarCaseFrames[caseKey];grammarCases[caseKey].prompts=grammarNounForms.flatMap(row=>frames.map(frame=>({base:row[0],prompt:frame,answer:row[formIndex]})));});
-     const allGrammarPrompts=Object.entries(grammarCases).flatMap(([caseKey,category])=>category.prompts.map(prompt=>({...prompt,caseKey})));
-    let grammarCategory='dative', grammarIndex=0, grammarLocked=false;
-    function normalizeGrammarAnswer(value){return value.toLowerCase().trim().replace(/[.!?,;:]+$/,'');}
-    function grammarPromptList(){return grammarCategory==='all'?allGrammarPrompts:grammarCases[grammarCategory].prompts;}
-    function currentGrammarItem(){const list=grammarPromptList();return list[grammarIndex%list.length];}
-     function renderGrammar(){ const item=currentGrammarItem(); const category=grammarCases[item.caseKey||grammarCategory]; grammarLocked=false; const mixed=grammarCategory==='all'; $('#grammarCaseLabel').textContent=mixed?'All cases · Все':category.label; $('#grammarCaseName').textContent=mixed?'Mixed case practice':category.name; $('#grammarCaseQuestions').textContent=(mixed?'Which case does this sentence require?':category.questions)+' · '+grammarPromptList().length+' prompts'; $('#grammarBaseWord').innerHTML='<button type="button" class="vocab-word-link reading-word" data-word="'+escapeHtml(item.base)+'">'+escapeHtml(item.base)+'</button>'; $('#grammarPrompt').textContent=item.prompt; $('#grammarInput').value=''; $('#grammarFeedback').textContent=''; document.querySelectorAll('[data-grammar-case]').forEach(button=>{const active=button.dataset.grammarCase===grammarCategory;button.classList.toggle('active',active);button.setAttribute('aria-selected',active?'true':'false');}); $('#grammarInput').focus(); }
-    function checkGrammarAnswer(){ const item=currentGrammarItem(); if(grammarLocked)return; const typed=normalizeGrammarAnswer($('#grammarInput').value); if(!typed){$('#grammarFeedback').textContent='Type the changed Russian word first.';return;} grammarLocked=true; const correct=typed===normalizeGrammarAnswer(item.answer); const category=grammarCases[item.caseKey||grammarCategory]; if(correct){$('#grammarFeedback').textContent='Correct — '+item.base+' becomes '+item.answer+' here.'+(grammarCategory==='all'?' This is '+category.name+'.':'');state.xp+=10;toast('+10 XP · Case form retrieved.');}else{$('#grammarFeedback').textContent='Not quite. The answer is '+item.answer+'. Notice what changed from '+item.base+'.'+(grammarCategory==='all'?' This sentence uses '+category.name+'.':'');} recordExposure(item.answer,correct,'grammar'); save(); updateStats(); }
-    document.querySelectorAll('[data-grammar-case]').forEach(button=>button.addEventListener('click',()=>{grammarCategory=button.dataset.grammarCase;grammarIndex=0;renderGrammar();}));
-    $('#checkGrammar').onclick=checkGrammarAnswer;
-    $('#showGrammarAnswer').onclick=()=>{const item=currentGrammarItem();$('#grammarFeedback').textContent='Answer: '+item.answer;};
-    $('#grammarInput').onkeydown=(event)=>{if(event.key==='Enter')checkGrammarAnswer();};
-    $('#nextGrammar').onclick=()=>{grammarIndex=(grammarIndex+1)%grammarPromptList().length;renderGrammar();};
-    if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{}));
-    function addNumbersLesson(){const grid=document.querySelector('#lessons .lesson-video-grid');if(!grid||grid.querySelector('[data-lesson="numbers"]'))return;const card=document.createElement('article');card.className='lesson-video-card';card.innerHTML='<div class="lesson-video-thumb">123</div><div class="lesson-video-body"><strong>Russian numbers: 1–100</strong><p>Learn cardinal numbers, gender agreement, and the noun patterns after 1, 2–4, and 5+.</p><div class="lesson-video-example">два билета · пять билетов</div><div class="lesson-video-actions"><a href="https://www.youtube.com/results?search_query=Russian+numbers+gender+cases+1+2+3+4+5" target="_blank" rel="noopener">Watch lesson ↗</a><button type="button" data-lesson="numbers">Mark watched</button></div></div>';grid.appendChild(card);card.querySelector('[data-lesson]').onclick=button=>{if(button.target.classList.contains('lesson-watched'))return;button.target.textContent='Watched ✓';button.target.classList.add('lesson-watched');state.xp+=5;save();updateStats();toast('+5 XP · Numbers lesson logged.');};}
-     const entertainmentCurriculum=[
-       {stage:'A1',substage:'A1.1',progress:3,title:'First contact',focus:'Greetings, names, numbers, and very common phrases.',items:[['Song','Песенка крокодила Гены'],['Show','Маша и Медведь'],['YouTube','Russian with Max · beginner greetings'],['Movie','Трое из Простоквашино'],['Book','Колобок · Russian folk tale']]},
-       {stage:'A1',substage:'A1.2',progress:9,title:'Daily basics',focus:'Food, family, routines, and short predictable conversations.',items:[['Song','Антошка'],['Show','Смешарики · simple episodes'],['YouTube','Easy Russian · Super Easy Russian'],['Movie','Чебурашка · animated film'],['Book','Теремок · Russian folk tale']]},
-       {stage:'A2',substage:'A2.1',progress:16,title:'Getting around',focus:'Travel, directions, shopping, and describing what happened.',items:[['Song','Кино · Группа крови'],['Show','Фиксики'],['YouTube','Russian Progress · beginner stories'],['Movie','Иван Царевич и Серый Волк'],['Book','Денискины рассказы']]},
-       {stage:'A2',substage:'A2.2',progress:24,title:'Everyday life',focus:'Past and future, opinions, plans, and familiar social situations.',items:[['Song','Би-2 · Полковнику никто не пишет'],['Show','Кухня · short scenes'],['YouTube','Easy Russian · street interviews'],['Movie','Операция «Ы»'],['Book','Приключения Незнайки']]},
-       {stage:'B1',substage:'B1.1',progress:32,title:'Stories and feelings',focus:'Narration, emotions, relationships, and connected speech.',items:[['Song','Мумий Тролль · Медведица'],['Show','Орёл и решка · travel clips'],['YouTube','Russian with Max · intermediate stories'],['Movie','Любовь и голуби'],['Book','Алые паруса']]},
-       {stage:'B1',substage:'B1.2',progress:40,title:'Natural conversation',focus:'Idioms, humor, informal speech, and longer explanations.',items:[['Song','Сплин · Выхода нет'],['Show','Кухня · full episodes'],['YouTube','Russian Progress · intermediate listening'],['Movie','Москва слезам не верит'],['Book','Мастер и Маргарита · selected chapters']]},
-       {stage:'B2',substage:'B2.1',progress:48,title:'Ideas and culture',focus:'Abstract topics, social commentary, and varied registers.',items:[['Song','ДДТ · Что такое осень'],['Show','Своя игра · clips'],['YouTube','Arzamas · Russian culture videos'],['Movie','Служебный роман'],['Book','Двенадцать стульев']]},
-       {stage:'B2',substage:'B2.2',progress:56,title:'Fast real Russian',focus:'Faster speech, implied meaning, satire, and professional vocabulary.',items:[['Song','Машина времени · Поворот'],['Show','Намедни · archive clips'],['YouTube','ПостНаука · short lectures'],['Movie','Левиафан'],['Book','Евгений Онегин · selected scenes']]},
-       {stage:'C1',substage:'C1.1',progress:64,title:'Literary texture',focus:'Metaphor, tone, historical language, and nuanced description.',items:[['Song','Аквариум · Город золотой'],['Show','Большая игра · interviews'],['YouTube','Культура · author interviews'],['Movie','Андрей Рублёв'],['Book','Преступление и наказание']]},
-       {stage:'C1',substage:'C1.2',progress:72,title:'Voices and viewpoints',focus:'Debate, irony, regional voices, and subtle shifts in meaning.',items:[['Song','Земфира · Искала'],['Show','Документальные фильмы Россия-Культура'],['YouTube','вДудь · selected interviews'],['Movie','Движение вверх'],['Book','Доктор Живаго']]},
-       {stage:'C2',substage:'C2.1',progress:80,title:'Precision and style',focus:'Dense prose, rhetorical language, wordplay, and cultural references.',items:[['Song','Булат Окуджава · песни'],['Show','Что? Где? Когда?'],['YouTube','Лекции Новой школы'],['Movie','Сталкер'],['Book','Идиот']]},
-       {stage:'C2',substage:'C2.2',progress:88,title:'Full-speed immersion',focus:'Unscripted speech, specialized subjects, and demanding literature.',items:[['Song','Классика русского рока · live recordings'],['Show','Непосредственно Каха · clips'],['YouTube','НаукаPRO · lectures'],['Movie','Комбинат «Надежда»'],['Book','Тихий Дон']]},
-       {stage:'Fluent',substage:'Fluent.1',progress:92,title:'Choose your world',focus:'Follow your interests across genres without learner scaffolding.',items:[['Song','Современная русская музыка · live sessions'],['Show','Российские сериалы · current releases'],['YouTube','Russian news and creator channels'],['Movie','Новые российские фильмы'],['Book','Современная русская проза']]},
-       {stage:'Fluent',substage:'Fluent.2',progress:96,title:'Keep expanding',focus:'Maintain range, notice nuance, and keep discovering new voices.',items:[['Song','Русская музыка · any genre'],['Show','Русские сериалы без субтитров'],['YouTube','Подкасты и длинные интервью'],['Movie','Авторское российское кино'],['Book','Русская классика и современная литература']]}
-     ];
-     function mediaSearchUrl(type,title){const query=encodeURIComponent(title+' Russian');return type==='Book'?'https://www.google.com/search?q='+query+'+book': 'https://www.youtube.com/results?search_query='+query;}
-     function ensureEntertainmentTimeline(){const entertainment=$('#entertainment');if(!entertainment||$('#entertainmentTimeline'))return;const section=document.createElement('section');section.className='entertainment-timeline';section.id='entertainmentTimeline';section.innerHTML='<div class="section-head" style="margin-top:0"><div><div class="eyebrow">Entertainment progression</div><h2>Meet Russian at your level</h2><p>Recommendations change as your Russian grows. Each substage gives you songs, shows, films, YouTube, and books that reinforce the language you are ready to notice.</p></div><span class="pill">MEDIA BY LEVEL</span></div><div class="media-timeline-track" id="mediaTimelineTrack"><i class="media-timeline-fill" id="mediaTimelineFill"></i>'+entertainmentCurriculum.map(item=>'<div class="media-timeline-node" data-timeline-node="'+item.substage+'"><i></i><span>'+item.substage+'</span><small>'+item.progress+'%</small></div>').join('')+'</div><div class="media-recommendation-grid" id="mediaRecommendationGrid"></div><p class="media-timeline-note">Recommendations open searches or official/platform listings. Availability and subtitles can vary by country, so choose the version you can legally access.</p>';entertainment.appendChild(section);document.querySelectorAll('[data-timeline-node]').forEach(node=>node.onclick=()=>document.querySelector('[data-media-stage="'+node.dataset.timelineNode+'"]')?.scrollIntoView({behavior:'smooth',block:'center'}));renderEntertainmentTimeline();}
-     function renderEntertainmentTimeline(){const section=$('#entertainmentTimeline');if(!section)return;const progress=Math.max(3,Math.min(100,parseFloat($('#cefrFill')?.style.width)||3));const currentIndex=entertainmentCurriculum.reduce((index,item,i)=>item.progress<=progress?i:index,0);$('#mediaTimelineFill').style.width=progress+'%';const grid=$('#mediaRecommendationGrid');if(!grid)return;grid.innerHTML=entertainmentCurriculum.map((item,index)=>{const reached=index<currentIndex,current=index===currentIndex;const status=current?'Current focus':reached?'Available now':'Unlocks at '+item.progress+'%';return '<article class="media-stage-card '+(current?'is-current ':reached?'is-reached ':'is-upcoming ')+'" data-media-stage="'+item.substage+'"><div class="media-stage-meta"><span class="media-stage-label">'+item.stage+' · '+item.substage+'</span><span class="media-stage-status">'+status+'</span></div><h3>'+item.title+'</h3><p>'+item.focus+'</p><div class="media-recommendations">'+item.items.map(([type,title])=>'<div class="media-recommendation"><span>'+type+'</span><strong>'+title+'</strong><a href="'+mediaSearchUrl(type,title)+'" target="_blank" rel="noopener">Explore ↗</a></div>').join('')+'</div></article>';}).join('');}
-     function ensureBooksSection(){const entertainment=$('#entertainment');if(!entertainment||$('#booksSection'))return;const section=document.createElement('section');section.className='books-section';section.id='booksSection';section.innerHTML='<div class="section-head" style="margin-top:0"><div><div class="eyebrow">Entertainment · Books</div><h2>Books</h2><p>Read real Russian books while the app helps you notice and learn the language around them.</p></div><span class="pill">REAL BOOKS</span></div><div class="book-grid"><article class="book-card book-featured"><div class="book-cover">HP</div><div><h3>Гарри Поттер и философский камень</h3><p>Harry Potter and the Philosopher’s Stone · Russian translation · Book 1</p></div><div class="book-reader-note"><strong>Reader setup:</strong> The interactive reader will use a legally obtained copy or excerpt. Once the text is added, each word can open its meaning, pronunciation, status, context, and exposure history.</div></article></div>';entertainment.appendChild(section);}
-    function ensureNotesSection(){if($('#notes'))return;const lessons=$('#lessons');if(!lessons)return;const section=document.createElement('section');section.className='view';section.id='notes';section.innerHTML='<div class="section-head" style="margin-top:0"><div><div class="eyebrow">Reference notes</div><h2>Russian forms at a glance</h2><p>Keep the patterns here while you work through Lessons and Grammar Lab.</p></div><span class="pill">REFERENCE</span></div><div class="notes-grid"><article class="notes-card"><div class="eyebrow">Numbers</div><h3>Cardinal numbers and noun patterns</h3><p>Russian numbers change for gender, and the noun after a number changes too. These are the core forms to recognize first.</p><table class="notes-table"><thead><tr><th>Number</th><th>Russian</th><th>Example</th></tr></thead><tbody><tr><td>1</td><td>один · одна · одно</td><td>один дом · одна книга · одно окно</td></tr><tr><td>2</td><td>два · две</td><td>два дома · две книги</td></tr><tr><td>3</td><td>три</td><td>три дома</td></tr><tr><td>4</td><td>четыре</td><td>четыре дома</td></tr><tr><td>5</td><td>пять</td><td>пять домов</td></tr><tr><td>10</td><td>десять</td><td>десять домов</td></tr></tbody></table><div class="notes-callout"><strong>Quick rule:</strong> 1 usually takes the singular form; 2–4 usually take genitive singular; 5 and higher usually take genitive plural.</div></article><article class="notes-card"><div class="eyebrow">Cases</div><h3>How nouns change</h3><p>Use these example nouns as a model. The exact ending depends on gender, number, and declension.</p><table class="notes-table"><thead><tr><th>Case</th><th>Question</th><th>дом</th><th>книга</th><th>окно</th><th>студенты</th></tr></thead><tbody><tr><td>Nominative</td><td>кто? что?</td><td>дом</td><td>книга</td><td>окно</td><td>студенты</td></tr><tr><td>Accusative</td><td>кого? что?</td><td>вижу дом</td><td>вижу книгу</td><td>вижу окно</td><td>вижу студентов</td></tr><tr><td>Genitive</td><td>кого? чего?</td><td>нет дома</td><td>нет книги</td><td>нет окна</td><td>нет студентов</td></tr><tr><td>Dative</td><td>кому? чему?</td><td>к дому</td><td>к книге</td><td>к окну</td><td>к студентам</td></tr><tr><td>Instrumental</td><td>кем? чем?</td><td>с домом</td><td>с книгой</td><td>с окном</td><td>со студентами</td></tr><tr><td>Prepositional</td><td>о ком? о чём?</td><td>о доме</td><td>о книге</td><td>об окне</td><td>о студентах</td></tr></tbody></table></article></div><div class="section-head"><div><h2>Case reminders</h2><p>Small patterns to notice while you retrieve forms.</p></div></div><div class="panel"><div class="notes-case-list"><div><strong>Accusative</strong><span>direct object: вижу книгу</span></div><div><strong>Genitive</strong><span>absence or possession: нет времени</span></div><div><strong>Dative</strong><span>recipient or direction: дать другу</span></div><div><strong>Instrumental</strong><span>with or by means: с другом</span></div><div><strong>Prepositional</strong><span>topic or location: о работе · в Москве</span></div></div></div>';lessons.after(section);}
-    function addRussianStoryBook(){const section=$('#booksSection');if(!section||$('#russianStoryBook'))return;const card=document.createElement('article');card.className='book-card book-featured';card.id='russianStoryBook';card.innerHTML='<div class="book-cover">A2</div><div><h3>Дом на синем холме</h3><p>Оригинальная история на русском языке · 200 страниц · A2 reading</p></div><div class="book-reader-note"><strong>Russian Sprint reader:</strong> A long, simple adventure about Анна, Белый Берег, and the stories hidden around a seaside town. Read a few pages, then bring new words back to My Words.</div><a class="primary" href="dom-na-sinem-holme-a2.html" target="_blank" rel="noopener">Open the Russian story ↗</a>';section.querySelector('.book-grid')?.prepend(card);}
-    document.querySelector('#entertainment')?.replaceChildren(); ensureEntertainmentTimeline(); ensureBooksSection(); addRussianStoryBook(); addNumbersLesson(); ensureNotesSection(); renderFocusedPassage(); ensureTargetedReadingStudio(); renderWriting(); renderListeningSpeaking(); removeListeningIntro(); renderGrammar();
-    organizeAddWords(); ensureWordPractice(); renderFlash(); renderVocabulary(); renderTriage(); renderWordPractice(); updateStats(); document.querySelector('#library')?.remove(); document.querySelector('#alphabet')?.remove(); document.querySelector('#triage')?.remove(); initCloudSync(); wireSafeSyncControls();
-  </script>
-
-
-
-                                                                                                                                                                                                                                   <script src="./app-api.js"></script>
-
-        <script>(function () {
-  const $ = (selector) => document.querySelector(selector);
-  const api = {};
-
-  async function invoke(functionName, body) {
-    if (!supabaseClient) throw new Error('Cloud services are not available in this browser.');
-    const { data, error } = await supabaseClient.functions.invoke(functionName, { body });
-    if (error) throw error;
-    if (data && data.error) throw new Error(data.error);
-    return data;
-  }
-
-  api.generateParagraphs = (target) => invoke('generate-paragraphs', { target_word_or_phrase: target });
-  api.evaluateWord = (body) => invoke('evaluate-word', body);
-  window.russianSprintApi = api;
-
-  function mapParagraphs(data) {
-    return (data.paragraphs || []).map((item, index) => ({
-      ru: String(item.russian_text || '').replace(/\*\*/g, ''),
-      en: String(item.english_translation || ''),
-      note: String(item.grammar_note || ''),
-      index,
-      source: 'ai'
-    }));
-  }
-
-  async function generateTargetedParagraphs() {
-    const input = $('#targetedReadingInput');
-    if (!input) return;
-    const phrase = input.value.replace(/\s+/g, ' ').trim();
-    if (!phrase) {
-      targetedReadingPhrase = '';
-      targetedReadingItems = [];
-      renderTargetedReading();
-      return;
-    }
-    targetedReadingPhrase = phrase;
-    targetedReadingIndex = 0;
-    targetedReadingItems = [];
-    $('#targetedReadingHint').textContent = 'Generating 10 natural contexts for ' + phrase + '…';
-    renderTargetedReading();
-    try {
-      const data = await api.generateParagraphs(phrase);
-      if (!Array.isArray(data?.paragraphs) || data.paragraphs.length !== 10) throw new Error('The generator returned an incomplete set.');
-      targetedReadingItems = mapParagraphs(data);
-      renderTargetedReading();
-      toast('10 AI passages generated for ' + phrase + '.');
-    } catch (error) {
-      try {
-        targetedReadingItems = await requestTargetedReadingPassages(phrase);
-        renderTargetedReading();
-        $('#targetedReadingHint').textContent = 'AI generation was unavailable, so the app loaded saved contexts for ' + phrase + '.';
-      } catch (fallbackError) {
-        targetedReadingItems = [];
-        renderTargetedReading();
-        $('#targetedReadingHint').textContent = 'Could not generate passages: ' + (error?.message || 'please try again.');
-      }
-    }
-  }
-
-  function applyRemoteSchedule(item, result) {
-    const schedule = result?.srs || {};
-    item.cardId = result.card_id || item.cardId;
-    item.exposures = (item.exposures || 0) + 1;
-    item.lastMode = 'production';
-    item.lastReviewAt = Date.now();
-    item.lastExposureAt = Date.now();
-    item.reviewsCount = schedule.reviews_count || item.reviewsCount || 0;
-    item.reps = item.reviewsCount;
-    item.stability = Number(schedule.interval_days) || item.stability || 1;
-    item.easeFactor = Number(schedule.ease_factor) || item.easeFactor || 2.5;
-    item.dueAt = Date.parse(schedule.due_date) || item.dueAt;
-    if (result.anki_srs_rating === 'AGAIN') {
-      item.status = 'new';
-      item.lapses = (item.lapses || 0) + 1;
-    } else if (result.status === 'CORRECT' && result.anki_srs_rating === 'EASY') {
-      item.status = 'known';
-      item.successes = (item.successes || 0) + 1;
-    } else {
-      item.status = 'somewhat';
-      item.successes = (item.successes || 0) + (result.status === 'CORRECT' ? 1 : 0);
-    }
-  }
-
-  const localCheckWordPractice = window.checkWordPractice;
-  async function checkWordPracticeWithLLM() {
-    const item = currentPracticeItem();
-    if (!item || wordPracticeLocked) return;
-    const typed = normalizePracticeText($('#practiceRussian').value);
-    if (!typed) {
-      $('#practiceFeedback').textContent = 'Type the Russian word or phrase first, or reveal the answer.';
-      $('#practiceRussian').focus();
-      return;
-    }
-    if (!supabaseClient) return localCheckWordPractice();
-    const sessionResult = await supabaseClient.auth.getSession();
-    if (!sessionResult?.data?.session) return localCheckWordPractice();
-    item.cardId = item.cardId || crypto.randomUUID();
-    $('#checkWordPractice').disabled = true;
-    $('#practiceFeedback').textContent = 'Evaluating your Russian answer…';
-    try {
-      const result = await api.evaluateWord({
-        card_id: item.cardId,
-        english_definition: item.meaning,
-        expected_russian: item.word,
-        user_russian_input: typed
-      });
-      applyRemoteSchedule(item, result);
-      save();
-      wordPracticeLocked = true;
-      wordPracticeAnsweredCorrect = result.status === 'CORRECT';
-      wordPracticeRevealed = true;
-      $('#practiceAnswer').textContent = 'Russian: ' + (result.correct_russian || item.word);
-      $('#practiceAnswer').hidden = false;
-      const interval = result.srs?.due_date ? formatDue({ dueAt: Date.parse(result.srs.due_date) }) : 'the next scheduled interval';
-      $('#practiceFeedback').textContent = result.feedback_message + ' ' + (result.grammar_tip || '') + ' Scheduled ' + result.anki_srs_rating + ' · ' + interval + '.';
-      document.querySelectorAll('[data-anki-rate]').forEach((button) => { button.disabled = true; });
-      renderVocabulary();
-      updateStats();
-    } catch (error) {
-      $('#checkWordPractice').disabled = false;
-      $('#practiceFeedback').textContent = 'AI evaluation is unavailable, so local recall checking is being used.';
-      localCheckWordPractice();
-    }
-  }
-
-  const targetButton = $('#generateTargetedReading');
-  if (targetButton) targetButton.onclick = generateTargetedParagraphs;
-  const practiceButton = $('#checkWordPractice');
-  if (practiceButton) practiceButton.onclick = checkWordPracticeWithLLM;
-}());</script>
-
-      <script>window.__russianSprintInline="ran";</script>
-
-      <script src="./app-api.js"></script>
-
-              <script src="./app-api.js?v=20261028-3"></script>
-
-              <script src="./targeted-reading-library.js?v=20261028-1"></script>
-              <script src="./app-api.js?v=20261028-4"></script>
-
-                                                                                                                                                                              <style id="minimal-two-page-style">
-  body { background: #fbf8f2; }
-  .app-shell { display: block; min-height: 100vh; }
-  .sidebar, .mobile-nav { display: none !important; }
-  .main { max-width: 1180px; padding: 24px 28px 60px; }
-  .topbar { margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid #e6e3da; }
-  .topbar > div:first-child .eyebrow { display: none; }
-  .topbar h1 { font-size: 32px; margin: 0; }
-  .topbar .streak { display: none; }
-  .minimal-tabs { display: flex; gap: 8px; margin: 0 0 24px; border-bottom: 1px solid #e6e3da; }
-  .minimal-tab { border: 0; border-bottom: 3px solid transparent; background: transparent; color: #68716b; padding: 13px 18px; font-weight: 800; cursor: pointer; }
-  .minimal-tab.active { color: #4b0f1a; border-bottom-color: #0039a6; }
-  .view#vocab { border: 0 !important; padding: 0 !important; background: transparent !important; }
-  .view#practice { display: none; }
-  .view#practice.active { display: block; }
-  #vocab > .section-head { margin-top: 0; }
-  #vocab > .section-head h2 { font-size: 32px; }
-  #vocab > .section-head p { font-size: 15px; }
-  #vocab .next-word { display: none; }
-  #vocab .vocab-layout { display: block; }
-  #vocab .vocab-library-head { margin-top: 0; }
-  #practice .section-head { margin-top: 0; }
-  #practice .section-head h2 { font-size: 32px; }
-  #practice .section-head p { font-size: 15px; }
-  #practice .word-practice-panel { margin-top: 0; background: #fffdf9; border-color: #e6e3da; box-shadow: 0 12px 30px rgba(56,42,26,.06); }
-  #syncPanel { margin-top: 24px; }
-  @media (max-width:700px) { .main { padding: 20px 17px 42px; } .minimal-tab { flex: 1; padding: 12px 8px; } .topbar h1 { font-size: 27px; } }
-</style>
-<script>
+    function renderShortPromptLibrary(){ensureShortPromptLibrary();const list=filteredShortPrompts();if(!list.length){$('#shortPromptIndex').textContent='No matching passages';$('#shortPromptRussian').textContent='Try another search.';$('#shortPromptEnglish').textContent='';$('#shortPromptMeta').innerHTML='';$('#shortPromptList').innerHTML='';return;}shortPromptIndex=((shortPromptIndex%list.length)+list.length)%list.length;const prompt=list[shortPromptIndex];$('#shortPromptIndex').textContent='Passage '+(shortPromptIndex+1)+' of '+list.length+' · '+prompt.title;$('#shortPromptRussian').innerHTML=interactivePassage(prompt.ru);$('#shortPromptEnglish').textContent=prompt.english;$('#shortPromptMeta').innerHTML='<span>'+prompt.focus+'</span><span>R[Truncated]
+<script id="practice-core-bank-and-due-fix">
 (function(){
-  const $ = (selector) => document.querySelector(selector);
-  const vocab = $('#vocab');
-  const main = document.querySelector('.main');
-  if (!vocab || !main || $('#minimalTabs')) return;
-  const existingPractice = $('#wordPractice');
-  const syncPanel = $('#syncPanel');
-  const practice = document.createElement('section');
-  practice.className = 'view';
-  practice.id = 'practice';
-  practice.innerHTML = '<div class="section-head"><div><div class="eyebrow">Practice</div><h2>Anki review</h2><p>Study due words first. Type the Russian answer, reveal it when needed, then rate the recall.</p></div><span class="pill" id="minimalPracticeStatus">SPACED REPETITION</span></div><div id="practiceMount"></div>';
-  main.appendChild(practice);
-  if (existingPractice) $('#practiceMount').appendChild(existingPractice);
-  if (syncPanel) vocab.appendChild(syncPanel);
-  document.querySelectorAll('.view').forEach((view) => { if (view.id !== 'vocab' && view.id !== 'practice') view.remove(); });
-  const tabs = document.createElement('nav');
-  tabs.className = 'minimal-tabs';
-  tabs.id = 'minimalTabs';
-  tabs.setAttribute('aria-label', 'Main navigation');
-  tabs.innerHTML = '<button class="minimal-tab active" data-minimal-view="vocab" type="button">Vocabulary</button><button class="minimal-tab" data-minimal-view="practice" type="button">Practice</button>';
-  vocab.before(tabs);
-  const vocabHeading = vocab.querySelector(':scope > .section-head h2');
-  const vocabDescription = vocab.querySelector(':scope > .section-head p');
-  if (vocabHeading) vocabHeading.textContent = 'Vocabulary';
-  if (vocabDescription) vocabDescription.textContent = ''; 
-  const topHeading = document.querySelector('.topbar h1');
-  if (topHeading) topHeading.textContent = 'Русский Sprint';
-  const topEyebrow = document.querySelector('.topbar .eyebrow');
-  if (topEyebrow) topEyebrow.textContent = 'Vocabulary + Practice';
-  function selectView(viewId) {
-    document.querySelectorAll('.view').forEach((view) => view.classList.toggle('active', view.id === viewId));
-    tabs.querySelectorAll('button').forEach((button) => button.classList.toggle('active', button.dataset.minimalView === viewId));
-    if (viewId === 'practice' && typeof renderWordPractice === 'function') renderWordPractice();
-    if (viewId === 'vocab' && typeof renderVocabulary === 'function') renderVocabulary();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-  tabs.querySelectorAll('button').forEach((button) => button.addEventListener('click', () => selectView(button.dataset.minimalView)));
-  selectView('vocab');
-})();
-</script>
-
-      <script>
-(function(){
-  function fillEnglishDefinition(){
-    const label = document.querySelector('#wordPractice .word-practice-grid .eyebrow');
-    if (label) label.textContent = 'ENGLISH DEFINITION';
-    const prompt = document.querySelector('#practicePrompt');
-    if (!prompt || prompt.textContent.trim() !== '—') return;
-    const pool = typeof practicePool === 'function' ? practicePool() : [];
-    const item = pool[0];
-    if (item && item.meaning) prompt.textContent = item.meaning;
-  }
-  const original = window.renderWordPractice;
-  if (typeof original === 'function') {
-    window.renderWordPractice = function(){ original(); fillEnglishDefinition(); };
-  }
-  setTimeout(fillEnglishDefinition, 0);
-  if(!window.__quizletTwoPassMode){
-    window.__quizletTwoPassMode=true;
-    const queueEntry=item=>ankiRepeatQueue.find(entry=>entry.key===vocabularyKey(item.word));
-    const refreshRatings=()=>{const item=currentPracticeItem(),entry=item&&queueEntry(item),unlocked=!!(entry&&(entry.correct||0)>=2&&wordPracticeAnsweredCorrect);document.querySelectorAll('[data-anki-rate]').forEach(button=>button.disabled=!unlocked);};
-    const originalPracticeRender=window.renderWordPractice;
-    if(typeof originalPracticeRender==='function')window.renderWordPractice=function(){originalPracticeRender();refreshRatings();};
-    const showNextAfterFirstPass=key=>{advanceAnkiRepeatQueue(key);const ready=ankiRepeatQueue.find(repeat=>repeat.key!==key&&repeat.wait<=0&&(repeat.correct||0)<2);const next=ready?state.vocab.find(entry=>vocabularyKey(entry.word)===ready.key):practicePool().find(entry=>vocabularyKey(entry.word)!==key&&!ankiRepeatQueue.some(repeat=>repeat.key===vocabularyKey(entry.word)&&repeat.wait>0));wordPracticeCurrentKey=next?vocabularyKey(next.word):'';wordPracticeIndex++;window.renderWordPractice();};
-    window.checkWordPractice=function(){
-      const item=currentPracticeItem();if(!item||wordPracticeLocked)return;
-      const input=document.querySelector('#practiceRussian'),typed=normalizePracticeText(input.value);
-      if(!typed){document.querySelector('#practiceFeedback').textContent='Type the Russian word or phrase first, or reveal the answer.';input.focus();return;}
-      if(!practiceAnswers(item.word).includes(typed)){document.querySelector('#practiceFeedback').textContent='Not quite — try again.';toast('Try the same word again.');return;}
-      wordPracticeLocked=true;wordPracticeAnsweredCorrect=true;wordPracticeRevealed=true;
-      const key=vocabularyKey(item.word);let entry=queueEntry(item);if(!entry){entry={key,wait:2,correct:0};ankiRepeatQueue.push(entry);}entry.correct=Math.min(2,(entry.correct||0)+1);
-      if(entry.correct<2){entry.wait=2;document.querySelector('#practiceFeedback').textContent='Correct — pass 1/2. This word will return after two more words.';toast('Correct — it will return after two more cards.');updateStats();setTimeout(()=>showNextAfterFirstPass(key),450);}
-      else{entry.wait=0;document.querySelector('#practiceAnswer').textContent='Russian: '+item.word;document.querySelector('#practiceAnswer').hidden=false;document.querySelector('#practiceFeedback').textContent='Correct — pass 2/2. Now choose Again, Hard, Good, or Easy.';refreshRatings();updateStats();}
-    };
-    window.revealWordPracticeAnswer=function(){const item=currentPracticeItem();if(!item)return;wordPracticeRevealed=true;document.querySelector('#practiceAnswer').textContent='Russian: '+item.word;document.querySelector('#practiceAnswer').hidden=false;document.querySelector('#practiceFeedback').textContent='Answer shown. Type it correctly on a later pass to unlock the rating.';refreshRatings();};
-    const bindTwoPass=()=>{const check=document.querySelector('#checkWordPractice'),reveal=document.querySelector('#showWordPracticeAnswer');if(check)check.onclick=window.checkWordPractice;if(reveal)reveal.onclick=window.revealWordPracticeAnswer;refreshRatings();};
-    bindTwoPass();new MutationObserver(bindTwoPass).observe(document.body,{childList:true,subtree:true});
-  }
-
-})();
-</script>
-
-<style id="home-page-style">
-  #home.view { max-width:1180px; margin:0 auto; }
-  .home-header { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; margin:4px 0 20px; }
-  .home-header h2 { margin-top:7px; font-size:34px; }
-  .home-header p { color:var(--muted); line-height:1.5; margin:9px 0 0; }
-  .home-card { background:var(--card); border:1px solid var(--line); border-radius:22px; padding:24px; box-shadow:0 12px 30px rgba(56,42,26,.05); }
-  .home-cefr-card { background:linear-gradient(135deg,#fff8f5,#f4e8ec); border-color:#e5cbd2; }
-  .home-cefr-top { display:flex; justify-content:space-between; gap:18px; align-items:flex-start; }
-  .home-cefr-top h3 { margin:8px 0 3px; font-size:25px; }
-  .home-cefr-top p { color:var(--muted); margin:0; line-height:1.45; font-size:13px; }
-  .home-cefr-percent { font-size:28px; color:var(--green); font-weight:900; }
-  .home-cefr-track { position:relative; height:11px; margin-top:25px; background:#ead4da; border-radius:999px; overflow:hidden; }
-  .home-cefr-fill { display:block; height:100%; width:3%; background:linear-gradient(90deg,var(--coral),#d49b54,var(--green-2)); border-radius:999px; transition:width .35s ease; }
-  .home-cefr-levels { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin-top:14px; }
-  .home-cefr-level { padding:11px 5px; border:1px solid #e7d4d9; background:rgba(255,255,255,.72); color:var(--muted); border-radius:12px; text-align:center; font-size:11px; font-weight:850; }
-  .home-cefr-level small { display:block; color:var(--muted); margin-top:4px; font-size:9px; font-weight:700; }
-  .home-cefr-level.reached { background:var(--mint); color:var(--green); border-color:#d5a3af; }
-  .home-cefr-level.current { box-shadow:0 0 0 3px rgba(0,57,166,.15); border-color:var(--coral); color:var(--green); }
-  .home-stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:13px; margin-top:18px; }
-  .home-stat { padding:17px; border:1px solid var(--line); border-radius:17px; background:var(--card); }
-  .home-stat small { color:var(--muted); display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; font-weight:850; }
-  .home-stat strong { color:var(--green); display:block; font-size:28px; margin-top:5px; }
-  .home-stat span { color:var(--muted); display:block; font-size:11px; margin-top:3px; }
-  #homeSyncSlot { margin-top:18px; }
-  #homeSyncSlot #syncPanel { margin-top:0; }
-  @media (max-width:700px) { .home-header { display:block; } .home-header .pill { display:inline-block; margin-top:14px; } .home-header h2 { font-size:29px; } .home-card { padding:19px; } .home-cefr-levels { gap:4px; } .home-cefr-level { font-size:9px; padding:9px 2px; } .home-cefr-level small { font-size:7px; } .home-stats-grid { gap:7px; } .home-stat { padding:12px 10px; } .home-stat strong { font-size:22px; } }
-</style>
-<script>
-(function(){
-  const main=document.querySelector('.main'),vocab=document.querySelector('#vocab'),practice=document.querySelector('#practice'),tabs=document.querySelector('#minimalTabs'),sync=document.querySelector('#syncPanel');
-  if(!main||!vocab||!practice||!tabs||document.querySelector('#home'))return;
-  const home=document.createElement('section');home.className='view';home.id='home';
-  home.innerHTML='<div class="home-header"><div><div class="eyebrow">HOME · OVERVIEW</div><h2>Welcome back, Alissa</h2><p id="homeSummary">Your Russian learning journey at a glance.</p></div><span class="pill" id="homeStage">A1 · STARTING OUT</span></div><div class="home-card home-cefr-card"><div class="home-cefr-top"><div><div class="eyebrow">LEARNING JOURNEY</div><h3 id="homeStageTitle">A1 · Beginner</h3><p id="homeStageNote">Build a foundation of everyday Russian.</p></div><strong class="home-cefr-percent" id="homePercent">3%</strong></div><div class="home-cefr-track"><i class="home-cefr-fill" id="homeCefrFill"></i></div><div class="home-cefr-levels" id="homeCefrLevels"></div><div class="home-stats-grid"><div class="home-stat"><small>Known</small><strong id="homeKnown">0</strong><span>ready for wider use</span></div><div class="home-stat"><small>Somewhat known</small><strong id="homeSomewhat">0</strong><span>needs more retrieval</span></div><div class="home-stat"><small>Due now</small><strong id="homeDue">0</strong><span>scheduled to practice</span></div></div></div><div id="homeSyncSlot"></div>';
-  main.insertBefore(home,vocab);
-  const homeTab=document.createElement('button');homeTab.className='minimal-tab';homeTab.type='button';homeTab.dataset.minimalView='home';homeTab.textContent='Home';tabs.insertBefore(homeTab,tabs.firstChild);
-  if(sync)document.querySelector('#homeSyncSlot').appendChild(sync);
-  function homeMetrics(){const words=Array.isArray(state?.vocab)?state.vocab:[],known=words.filter(item=>item.status==='known').length,somewhat=words.filter(item=>item.status==='somewhat').length,active=words.filter(item=>(item.exposures||0)>0).length,retrievals=words.reduce((sum,item)=>sum+(item.successes||0),0),due=words.filter(item=>(item.dueAt||0)<=Date.now()).length,weightedKnown=known+somewhat*.35,anchors=[[0,3],[600,10],[1500,25],[2500,45],[4000,65],[5500,80],[7000,92]];let score=anchors[anchors.length-1][1];for(let i=1;i<anchors.length;i++){if(weightedKnown<=anchors[i][0]){const [lowWords,lowScore]=anchors[i-1],[highWords,highScore]=anchors[i];score=lowScore+(weightedKnown-lowWords)/(highWords-lowWords)*(highScore-lowScore);break;}}score=Math.min(100,Math.max(3,Math.round(score)));return{known,somewhat,active,retrievals,due,score,weightedKnown};}
-  const levels=[{label:'A1',name:'Beginner',start:3,end:10,note:'Everyday basics'},{label:'A2',name:'Elementary',start:10,end:25,note:'Routine conversations'},{label:'B1',name:'Intermediate',start:25,end:45,note:'Connected speech'},{label:'B2',name:'Upper-intermediate',start:45,end:65,note:'Independent use'},{label:'C1',name:'Advanced',start:65,end:80,note:'Nuance and fluency'},{label:'C2',name:'Proficient',start:80,end:92,note:'Precision and range'},{label:'Fluent',name:'Fluent',start:92,end:100,note:'Flexible real-world use'}];
-  function renderHomeDashboard(){const m=homeMetrics(),current=levels.reduce((found,level,index)=>m.score>=level.start?index:found,0),level=levels[current],next=levels[Math.min(current+1,levels.length-1)];$('#homeStage').textContent=level.label+' · '+level.name.toUpperCase();$('#homeStageTitle').textContent=level.label+' · '+level.name;$('#homeStageNote').textContent=level.note+' · next milestone: '+(next===level?'maintain and expand':'reach '+next.label+' at '+next.start+'%');$('#homePercent').textContent=m.score+'%';$('#homeCefrFill').style.width=m.score+'%';$('#homeKnown').textContent=m.known;$('#homeSomewhat').textContent=m.somewhat;$('#homeDue').textContent=m.due;$('#homeSummary').textContent=m.known+' known words · '+m.somewhat+' somewhat known · '+m.active+' words encountered so far.';$('#homeCefrLevels').innerHTML=levels.map((item,index)=>'<div class="home-cefr-level '+(index<current?'reached ':'')+(index===current?'current':'')+'"><span>'+item.label+'</span><small>'+item.start+'%</small></div>').join('');}
-  window.renderHomeDashboard=renderHomeDashboard;
-  function selectHome(){document.querySelectorAll('.view').forEach(view=>view.classList.toggle('active',view.id==='home'));tabs.querySelectorAll('button').forEach(button=>button.classList.toggle('active',button===homeTab));renderHomeDashboard();window.scrollTo({top:0,behavior:'smooth'});}
-  homeTab.onclick=selectHome;
-  const topEyebrow=document.querySelector('.topbar .eyebrow');if(topEyebrow)topEyebrow.textContent='Home · Vocabulary · Practice';
-  const originalReview=window.reviewWordAnki;
-  if(typeof originalReview==='function')window.reviewWordAnki=function(item,rating){originalReview(item,rating);if(item){item.status=rating==='easy'?'known':rating==='hard'||rating==='good'?'somewhat':'new';save();renderVocabulary();renderHomeDashboard();}};
-  function bindPracticeRatings(){document.querySelectorAll('[data-anki-rate]').forEach(button=>{if(button.dataset.homeRatingBound==='1')return;button.dataset.homeRatingBound='1';button.onclick=()=>{if(button.disabled)return;if(!wordPracticeRevealed){toast('Answer the word twice before rating it.');return;}window.reviewWordAnki(currentPracticeItem(),button.dataset.ankiRate);};});}
-  bindPracticeRatings();new MutationObserver(bindPracticeRatings).observe(document.body,{childList:true,subtree:true});
-  renderHomeDashboard();selectHome();
-})();
-</script>
-<script id="rating-first-srs-patch">
-(function(){
-  if(window.__ratingFirstSrsMode)return;
-  window.__ratingFirstSrsMode=true;
-  const $=selector=>document.querySelector(selector);
-  const intervals={again:60000,hard:10*60000,good:24*60*60000,easy:4*24*60*60000};
-  const labels={again:'1 min',hard:'10 min',good:'1 day',easy:'4 days'};
-  const statusLabel=item=>item?.status==='known'?'Known':item?.status==='somewhat'?'Somewhat known':'Not yet';
-  const queueFor=item=>item&&Array.isArray(ankiRepeatQueue)?ankiRepeatQueue.find(entry=>entry.key===vocabularyKey(item.word)):null;
-  function updateRatingButtons(item){
-    document.querySelectorAll('[data-anki-rate]').forEach(button=>{
-      const rating=button.dataset.ankiRate;
-      button.disabled=!item||!wordPracticeRevealed;
-      const small=button.querySelector('small');
-      if(small&&labels[rating])small.textContent=labels[rating];
+  if(window.__practiceCoreBankAndDueFix)return;
+  window.__practiceCoreBankAndDueFix=true;
+  const fallbackKey=function(value){return String(value||'').toLowerCase().replace(/ё/g,'е').replace(/s+/g,' ').trim();};
+  const keyOf=function(value){try{return vocabularyKey(value);}catch(error){return fallbackKey(value);}};
+  const baseVocabulary=(typeof initialVocabulary!=='undefined'&&Array.isArray(initialVocabulary))?initialVocabulary:[];
+  const coreKeys=new Set(baseVocabulary.map(item=>keyOf(item&&item.word)).filter(Boolean));
+  if(!coreKeys.size)return;
+  const isCore=function(item){return !!item&&coreKeys.has(keyOf(item.word));};
+  const isValid=function(item){const meaning=String(item&&item.meaning||'').trim().toLowerCase();return isCore(item)&&item.word&&meaning&&meaning!=='definition coming soon'&&meaning!=='reading word';};
+  const dueSort=function(a,b){return (a.dueAt||0)-(b.dueAt||0)||(a.exposures||0)-(b.exposures||0);};
+  const quarantineExtras=function(){
+    if(!Array.isArray(state&&state.vocab))return;
+    let changed=false;
+    state.vocab.forEach(function(item){
+      if(!item||isCore(item))return;
+      if(item.practiceExcluded!==true){item.practiceExcluded=true;changed=true;}
+      if(item.dueAt!==Number.MAX_SAFE_INTEGER){item.dueAt=Number.MAX_SAFE_INTEGER;changed=true;}
     });
-  }
-  function updatePracticeCopy(item){
-    const description=document.querySelector('#wordPractice .section-head p');
-    if(description)description.textContent='Type the Russian answer, reveal it if needed, then choose when you want to see this word again.';
-    const meta=$('#practiceMeta');
-    if(meta&&item)meta.textContent='Status: '+statusLabel(item)+' · '+(item.exposures||0)+' exposures · '+formatDue(item)+' · Choose a review interval';
-    const count=$('#practiceDueCount');
-    if(count&&item){const due=practicePool().filter(entry=>(entry.dueAt||0)<=Date.now()).length;count.textContent=due+' due now';}
-  }
-  const originalRender=window.renderWordPractice;
-  window.renderWordPractice=function(){
-    if(typeof originalRender==='function')originalRender();
-    const item=typeof currentPracticeItem==='function'?currentPracticeItem():null;
-    updatePracticeCopy(item);
-    updateRatingButtons(item);
-    const check=$('#checkWordPractice'),reveal=$('#showWordPracticeAnswer');
-    if(check)check.onclick=window.checkWordPractice;
-    if(reveal)reveal.onclick=window.revealWordPracticeAnswer;
-    bindRatings();
+    if(changed&&typeof save==='function')save();
   };
-  window.checkWordPractice=function(){
-    const item=currentPracticeItem();
-    if(!item||wordPracticeLocked)return;
-    const input=$('#practiceRussian'),typed=normalizePracticeText(input?.value);
-    if(!typed){$('#practiceFeedback').textContent='Type the Russian word or phrase first, or reveal the answer.';input?.focus();return;}
-    if(!practiceAnswers(item.word).includes(typed)){$('#practiceFeedback').textContent='Not quite — try again, or reveal the answer.';toast('Try again.');return;}
-    wordPracticeLocked=true;wordPracticeAnsweredCorrect=true;wordPracticeRevealed=true;
-    const key=vocabularyKey(item.word),entry=queueFor(item);
-    if(entry){entry.wait=0;entry.correct=2;}else ankiRepeatQueue.push({key,wait:0,correct:2});
-    $('#practiceAnswer').textContent='Russian: '+item.word;$('#practiceAnswer').hidden=false;
-    $('#practiceFeedback').textContent='Correct — now choose Again, Hard, Good, or Easy.';
-    updateRatingButtons(item);updatePracticeCopy(item);updateStats();
-  };
-  window.revealWordPracticeAnswer=function(){
-    const item=currentPracticeItem();if(!item)return;
-    wordPracticeRevealed=true;
-    const key=vocabularyKey(item.word),entry=queueFor(item);
-    if(entry){entry.wait=0;entry.correct=2;}else ankiRepeatQueue.push({key,wait:0,correct:2});
-    $('#practiceAnswer').textContent='Russian: '+item.word;$('#practiceAnswer').hidden=false;
-    $('#practiceFeedback').textContent='Answer shown — choose when this word should return.';
-    updateRatingButtons(item);updatePracticeCopy(item);
-  };
-  window.reviewWordAnki=async function(item,rating){
-    if(!item||!intervals[rating])return;
-    const now=Date.now(),key=vocabularyKey(item.word),wait=intervals[rating];
-    item.exposures=(item.exposures||0)+1;item.activeExposures=(item.activeExposures||0)+1;item.lastMode='production';item.lastExposureAt=now;item.lastReviewAt=now;
-    item.modeExposures=item.modeExposures||{};item.modeExposures.production=(item.modeExposures.production||0)+1;
-    if(rating==='again'){item.status='new';item.lapses=(item.lapses||0)+1;item.reps=0;item.stability=Math.max(.08,1/1440);}
-    else{item.successes=(item.successes||0)+1;item.reps=(item.reps||0)+1;item.stability=rating==='easy'?4:rating==='good'?1:10/1440;item.status=rating==='easy'?'known':'somewhat';}
-    item.dueAt=now+wait;
-    ankiRepeatQueue=ankiRepeatQueue.filter(entry=>entry.key!==key);
-    wordPracticeCurrentKey='';wordPracticeIndex++;
-    await save();renderVocabulary();updateStats();
-    $('#practiceFeedback').textContent=(rating==='again'?'Again':rating==='hard'?'Hard':rating==='good'?'Good':'Easy')+' — this word will return in '+labels[rating]+'.';
-    renderWordPractice();toast('Review saved · '+item.word+' · next in '+labels[rating]);
-  };
-  function bindRatings(){
-    document.querySelectorAll('[data-anki-rate]').forEach(button=>{
-      button.onclick=()=>{if(button.disabled)return;if(!wordPracticeRevealed){toast('Answer or reveal the word before choosing a review interval.');return;}window.reviewWordAnki(currentPracticeItem(),button.dataset.ankiRate);};
+  const corePracticePool=function(){
+    const now=Date.now();
+    return state.vocab.filter(isValid).sort(function(a,b){
+      const aDue=(a.dueAt||0)<=now,bDue=(b.dueAt||0)<=now;
+      const aReviewed=(a.exposures||0)>0||!!a.lastReviewAt||!!a.reps;
+      const bReviewed=(b.exposures||0)>0||!!b.lastReviewAt||!!b.reps;
+      const aBucket=aDue?(aReviewed?0:1):2,bBucket=bDue?(bReviewed?0:1):2;
+      if(aBucket!==bBucket)return aBucket-bBucket;
+      if(aDue&&bDue){const aOverdue=Math.max(0,now-(a.dueAt||0)),bOverdue=Math.max(0,now-(b.dueAt||0));if(aOverdue!==bOverdue)return bOverdue-aOverdue;}
+      return dueSort(a,b);
     });
-  }
-  bindRatings();
-  ankiRepeatQueue=[];
-  setTimeout(()=>{bindRatings();if(typeof window.renderWordPractice==='function')window.renderWordPractice();},0);
-})();
-</script><script id="durable-progress-fallback">
-(function(){
-  if(window.__durableProgressFallback)return;
-  window.__durableProgressFallback=true;
-  const DB_NAME='russianSprintDurableProgress',STORE='snapshots',KEY='latest';
-  let hydrated=false,writeChain=Promise.resolve();
-  function openDb(){return new Promise((resolve,reject)=>{if(!window.indexedDB)return reject(new Error('IndexedDB unavailable'));const request=indexedDB.open(DB_NAME,1);request.onupgradeneeded=()=>request.result.createObjectStore(STORE,{keyPath:'id'});request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||new Error('IndexedDB open failed'));});}
-  async function readSnapshot(){try{const db=await openDb();return await new Promise((resolve,reject)=>{const request=db.transaction(STORE,'readonly').objectStore(STORE).get(KEY);request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error);});}catch(error){return null;}}
-  function writeSnapshot(){if(!hydrated||!window.indexedDB||!state?.vocab?.length)return writeChain;writeChain=writeChain.then(async()=>{try{const snapshot=JSON.parse(JSON.stringify(state)),db=await openDb();await new Promise((resolve,reject)=>{const request=db.transaction(STORE,'readwrite').objectStore(STORE).put({id:KEY,savedAt:Date.now(),state:snapshot});request.onsuccess=resolve;request.onerror=()=>reject(request.error);});}catch(error){console.warn('Durable progress backup unavailable',error);}});return writeChain;}
-  async function recover(){const record=await readSnapshot();if(record?.state?.vocab?.length){try{state=mergeCloudStates(record.state,state);state.words=state.vocab.length;persistLocalState();renderVocabulary();if(typeof renderTriage==='function'&&document.querySelector('#triage'))renderTriage();updateStats();}catch(error){console.warn('Durable progress recovery unavailable',error);}}hydrated=true;await writeSnapshot();}
-  window.__russianSprintWriteDurable=writeSnapshot;
-  setTimeout(recover,250);
-  setInterval(writeSnapshot,1500);
-  window.addEventListener('pagehide',()=>{if(hydrated)writeSnapshot();});
-  window.addEventListener('beforeunload',()=>{if(hydrated)writeSnapshot();});
-})();
-</script>
-
-<script id="due-queue-final-fix">
-(function(){
-  const dueCurrentPracticeItem=function(){
-    const ready=ankiRepeatQueue.find(entry=>entry.wait<=0);
-    if(!wordPracticeCurrentKey&&ready){const repeat=state.vocab.find(entry=>vocabularyKey(entry.word)===ready.key);if(repeat){wordPracticeCurrentKey=ready.key;return repeat;}}
-    const now=Date.now(),eligible=item=>item&&item.word&&item.meaning&&item.meaning!=='Definition coming soon',reviewedDue=state.vocab.filter(item=>eligible(item)&&(item.exposures||0)>0&&(item.dueAt||0)<=now).sort((a,b)=>(a.dueAt||0)-(b.dueAt||0)),newDue=state.vocab.filter(item=>eligible(item)&&(item.exposures||0)<=0&&(item.dueAt||0)<=now),duePool=[...reviewedDue,...newDue];
-    let item=wordPracticeCurrentKey?state.vocab.find(entry=>vocabularyKey(entry.word)===wordPracticeCurrentKey&&eligible(entry)):null;
-    if(item&&((item.dueAt||0)<=now||ready?.key===vocabularyKey(item.word)))return item;
-    item=duePool[0]||state.vocab.filter(entry=>eligible(entry)&&(entry.exposures||0)<=0).sort((a,b)=>(a.dueAt||0)-(b.dueAt||0))[0]||practicePool()[0]||null;
-    if(item)wordPracticeCurrentKey=vocabularyKey(item.word);
+  };
+  window.practicePool=corePracticePool;
+  try{practicePool=corePracticePool;}catch(error){}
+  const coreCurrentPracticeItem=function(){
+    quarantineExtras();
+    ankiRepeatQueue=ankiRepeatQueue.filter(function(entry){return coreKeys.has(entry.key)&&state.vocab.some(function(item){return isValid(item)&&keyOf(item.word)===entry.key;});});
+    const ready=ankiRepeatQueue.find(function(entry){return entry.wait<=0;});
+    if(!wordPracticeCurrentKey&&ready){const repeat=state.vocab.find(function(entry){return isValid(entry)&&keyOf(entry.word)===ready.key;});if(repeat){wordPracticeCurrentKey=ready.key;return repeat;}}
+    const now=Date.now();
+    let item=wordPracticeCurrentKey?state.vocab.find(function(entry){return isValid(entry)&&keyOf(entry.word)===wordPracticeCurrentKey;}):null;
+    if(item&&((item.dueAt||0)<=now||ready&&ready.key===keyOf(item.word)))return item;
+    const due=state.vocab.filter(function(entry){return isValid(entry)&&(entry.dueAt||0)<=now;}).sort(dueSort);
+    const fresh=state.vocab.filter(function(entry){return isValid(entry)&&(entry.exposures||0)<=0;}).sort(dueSort);
+    item=due[0]||fresh[0]||corePracticePool()[0]||null;
+    wordPracticeCurrentKey=item?keyOf(item.word):'';
     return item;
   };
-  window.currentPracticeItem=dueCurrentPracticeItem;
-  try{currentPracticeItem=dueCurrentPracticeItem;}catch(error){}
-})();
-</script>
-
-<script id="definition-repair-v1">
-(function(){
-  const meaning='still; nevertheless; after all; anyway';
-  const normalize=function(value){return String(value||'').toLowerCase().replace(/ё/g,'е').replace(/[\s-]+/g,'-').trim();};
-  const repair=function(){
-    try{
-      if(typeof state==='undefined'||!state||!Array.isArray(state.vocab))return;
-      const item=state.vocab.find(function(entry){return normalize(entry.word)==='все-таки';});
-      if(!item)return;
-      if(item.meaning&&item.meaning!=='Russian Accelerator 2 · Unit 1 · Lesson 1'&&item.meaning!=='Definition coming soon')return;
-      item.meaning=meaning;
-      if(typeof save==='function')save();
-      if(typeof renderVocabulary==='function')renderVocabulary();
-      if(typeof updateStats==='function')updateStats();
-    }catch(error){}
-  };
-  setTimeout(repair,800);
-  const timer=setInterval(repair,3000);
-  setTimeout(function(){clearInterval(timer);},30000);
-})();
-</script>
-
-<script id="due-again-refresh-fix">
-(function(){
-  if(window.__dueAgainRefreshFix)return;
-  window.__dueAgainRefreshFix=true;
-  function valid(item){return item&&item.word&&item.meaning&&item.meaning!=='Definition coming soon';}
-  function refreshIfDue(){
-    if(!document.querySelector('#practice.active')||!Array.isArray(state?.vocab))return;
-    const input=document.querySelector('#practiceRussian');
-    if(input&&input.value.trim())return;
-    if(typeof wordPracticeLocked!=='undefined'&&wordPracticeLocked)return;
-    const now=Date.now();
-    const due=state.vocab.filter(function(item){return valid(item)&&(item.exposures||0)>0&&(item.dueAt||0)<=now;}).sort(function(a,b){return (a.dueAt||0)-(b.dueAt||0);})[0];
-    if(!due)return;
-    const current=typeof currentPracticeItem==='function'?currentPracticeItem():null;
-    if(current&&vocabularyKey(current.word)===vocabularyKey(due.word))return;
-    wordPracticeCurrentKey='';
-    if(typeof renderWordPractice==='function')renderWordPractice();
-    if(typeof updateStats==='function')updateStats();
-    if(typeof toast==='function')toast('Due again · '+due.word);
+  window.currentPracticeItem=coreCurrentPracticeItem;
+  try{currentPracticeItem=coreCurrentPracticeItem;}catch(error){}
+  const originalRender=window.renderWordPractice;
+  if(typeof originalRender==='function'){
+    window.renderWordPractice=function(){
+      quarantineExtras();
+      if(wordPracticeCurrentKey){const current=state.vocab.find(function(item){return keyOf(item.word)===wordPracticeCurrentKey;});if(!isValid(current))wordPracticeCurrentKey='';}
+      originalRender();
+      const labels={again:'1 min',hard:'10 min',good:'1 day',easy:'4 days'};
+      Object.keys(labels).forEach(function(rating){const small=document.querySelector('[data-anki-rate="'+rating+'"] small');if(small)small.textContent=labels[rating];});
+    };
   }
-  window.setInterval(refreshIfDue,2000);
-  document.addEventListener('visibilitychange',refreshIfDue);
-  window.addEventListener('focus',refreshIfDue);
-})();
-</script>
-
-
-<script id="definition-repair-leg">
-(function(){
-  const targetMeaning='lay down; went to bed';
-  const normalize=function(value){return String(value||'').toLowerCase().replace(/ё/g,'е').replace(/[.,!?;:«»“”"()]/g,'').trim();};
-  const repair=function(){
-    try{
-      if(typeof state==='undefined'||!state||!Array.isArray(state.vocab))return;
-      let changed=false;
-      state.vocab.forEach(function(entry){
-        if(normalize(entry.word)==='лег' && entry.meaning!==targetMeaning){entry.meaning=targetMeaning;changed=true;}
-      });
-      if(!changed)return;
-      if(typeof save==='function')save();
-      if(typeof renderVocabulary==='function')renderVocabulary();
-      if(typeof renderWordPractice==='function')renderWordPractice();
-      if(typeof updateStats==='function')updateStats();
-    }catch(error){}
-  };
-  setTimeout(repair,800);
-  const timer=setInterval(repair,3000);
-  setTimeout(function(){clearInterval(timer);},30000);
-})();
-</script>
-
-
-<script id="definition-repair-vstrecha">
-(function(){
-  const targetMeaning='meets; encounters; occurs / is found';
-  const normalize=function(value){return String(value||'').toLowerCase().replace(/ё/g,'е').replace(/[.,!?;:«»“”"()]/g,'').trim();};
-  const repair=function(){
-    try{
-      if(typeof state==='undefined'||!state||!Array.isArray(state.vocab))return;
-      let changed=false;
-      state.vocab.forEach(function(entry){
-        if(normalize(entry.word)==='встречается' && entry.meaning!==targetMeaning){entry.meaning=targetMeaning;changed=true;}
-      });
-      if(!changed)return;
-      if(typeof save==='function')save();
-      if(typeof renderVocabulary==='function')renderVocabulary();
-      if(typeof renderWordPractice==='function')renderWordPractice();
-      if(typeof updateStats==='function')updateStats();
-    }catch(error){}
-  };
-  setTimeout(repair,800);
-  const timer=setInterval(repair,3000);
-  setTimeout(function(){clearInterval(timer);},30000);
-})();
-</script>
-
-<script id="definition-repair-starayus">
-(function(){
-  const targetMeaning='I try; I am trying; I make an effort';
-  const normalize=function(value){return String(value||'').toLowerCase().replace(/ё/g,'е').replace(/[.,!?;:«»“”"()]/g,'').trim();};
-  const repair=function(){
-    try{
-      if(typeof state==='undefined'||!state||!Array.isArray(state.vocab))return;
-      let changed=false;
-      state.vocab.forEach(function(entry){
-        if(normalize(entry.word)==='стараюсь' && entry.meaning!==targetMeaning){entry.meaning=targetMeaning;changed=true;}
-      });
-      if(!changed)return;
-      if(typeof save==='function')save();
-      if(typeof renderVocabulary==='function')renderVocabulary();
-      if(typeof renderWordPractice==='function')renderWordPractice();
-      if(typeof updateStats==='function')updateStats();
-    }catch(error){}
-  };
-  setTimeout(repair,800);
-  const timer=setInterval(repair,3000);
-  setTimeout(function(){clearInterval(timer);},30000);
-})();
-</script>
-
-<script id="definition-repair-reading-word">
-(function(){
-  if(window.__readingWordDefinitionRepairInstalled)return;
-  window.__readingWordDefinitionRepairInstalled=true;
-  const placeholder=function(value){return String(value||'').trim().toLowerCase()==='reading word';};
-  const normalize=function(value){return String(value||'').toLowerCase().replace(/ё/g,'е').replace(/[.,!?;:()«»"…—–-]+/g,' ').replace(/\s+/g,' ').trim();};
-  const fallback={"анна":"Anna","встала":"got up; stood up","рано":"early","открыла":"opened","окно":"window","приготовила":"prepared; made","телефон":"phone","написала":"wrote","сообщение":"message","сообщении":"in the message; about the message","подруге":"to a female friend","пошла":"went; left","мама":"mom; mother","рассказала":"told; recounted","папа":"dad; father","вернулся":"returned; came back","сестра":"sister","поговорили":"talked; had a conversation","пожелали":"wished","спокойной ночи":"good night","квартиру":"apartment; flat","прошлом месяце":"last month","сначала":"at first; initially","мебели":"furniture","стол":"table","стулья":"chairs","удобная":"comfortable; convenient (feminine)","кровать":"bed","нравится":"likes; is pleasing to","сегодня":"today","улице":"outside; on the street","холодно":"cold","идёт":"is going; is falling","дождь":"rain","надел":"put on","зонт":"umbrella","дороге":"on the road; on the way","машин":"cars; of cars","встретил":"met","соседа":"neighbor","заказал":"ordered","суп":"soup","салат":"salad","выбрал":"chose; selected","борщ":"borscht","еда":"food","вкусной":"tasty; delicious (feminine)","сидели":"sat; were sitting","разговаривали":"talked; were talking","каждый":"each; every (masculine)","день":"day","читаю":"I read; I am reading","новые":"new (plural)","слова":"words","слушаю":"I listen; I am listening","короткий":"short","диалог":"dialogue","если":"if","понимаю":"I understand","фразу":"phrase","проверяю":"I check; I am checking","выходные":"weekend","решили":"decided","взяли":"took","немного":"a little; somewhat","еды":"food (genitive)","ключи":"keys","мог":"could; was able to","карманы":"pockets","нигде":"nowhere","оставил":"left; placed","возле":"near; next to","двери":"door; of the door","важная":"important (feminine)","два":"two","часа":"hours; o’clock","боялся":"was afraid","поэтому":"therefore; so","вышел":"went out; left","заранее":"in advance","итоге":"in the end; as a result","пальто":"coat","магазине":"in the store","примерил":"tried on","одно":"one; a single one","удобнее":"more comfortable; more convenient","чек":"receipt","гуляли":"walked; were walking","городу":"around the city; to the city","зашли":"stopped in; entered","маленькое":"small (neuter)","кафе":"café","поездка":"trip","поездке":"trip; on a trip","россию":"Russia (accusative)","голова":"head","голову":"head (accusative)","остался":"stayed; remained","выпил":"drank; finished drinking","воды":"water (genitive)","поспал":"slept; took a nap","стало":"became; got","обеда":"lunch; after lunch","библиотеку":"library (accusative)","искал":"looked for; was searching for","книгу":"book (accusative)","русской":"Russian (feminine/genitive/prepositional)","истории":"history; story","отдел":"section; department","библиотекарь":"librarian","показал":"showed","дорогу":"way; road (accusative)","хочу":"I want","что-нибудь":"something; anything","нашёл":"found","простой":"simple","рецепт":"recipe","начал":"started; began","час":"hour","готов":"ready","субботу":"Saturday (accusative)","центру":"center; toward the center","посмотрел":"looked at; watched","старый":"old","театр":"theater","красивый":"beautiful","парк":"park","тихо":"quietly; it is quiet","скамейке":"on the bench","говорить":"to speak; to talk","помнить":"to remember","который":"which; who; that","какой":"which; what kind of","всё-таки":"still; nevertheless; after all; anyway","написано":"written","написанно":"written","минимум":"minimum; at least","мининмум":"minimum; at least","рассказывать":"to tell; to narrate; to talk about","стараюсь":"I try; I am trying; I make an effort","лёг":"lay down; went to bed","встречается":"meets; encounters; occurs; is found","встретиться":"to meet","принимать":"to accept; to receive; to take","принимать / принять":"to accept; to receive (imperfective / perfective)"};
-  const resolve=function(term){
-    const candidates=[String(term||'')];
-    try{if(typeof wordFixes!=='undefined'){const fixed=wordFixes.get(normalize(term));if(fixed)candidates.unshift(fixed);}}catch(error){}
-    for(const candidate of candidates){
-      try{if(typeof definitionFixes!=='undefined'){const exact=definitionFixes.get(normalize(candidate));if(exact&&!placeholder(exact))return exact;}}catch(error){}
-      try{if(typeof readingGlosses!=='undefined'){const gloss=readingGlosses[readingKey(candidate)];if(gloss&&!placeholder(gloss))return gloss;}}catch(error){}
-      const local=fallback[normalize(candidate)];if(local&&!placeholder(local))return local;
-      try{
-        if(typeof initialVocabulary!=='undefined'&&Array.isArray(initialVocabulary)){
-          const seed=initialVocabulary.find(function(item){return normalize(item&&item.word)===normalize(candidate)&&item.meaning&&!placeholder(item.meaning)&&item.meaning!=='Definition coming soon';});
-          if(seed)return seed.meaning;
-        }
-      }catch(error){}
-    }
-    return '';
-  };
-  const repair=function(){
-    try{
-      if(typeof state==='undefined'||!state||!Array.isArray(state.vocab))return;
-      let changed=false;
-      state.vocab.forEach(function(entry){
-        if(!entry||!placeholder(entry.meaning))return;
-        const meaning=resolve(entry.word);
-        if(meaning){entry.meaning=meaning;changed=true;}
-      });
-      if(changed){
-        if(typeof save==='function')save();
-        if(typeof renderVocabulary==='function')renderVocabulary();
-        if(typeof renderWordPractice==='function')renderWordPractice();
-        if(typeof updateStats==='function')updateStats();
+  const intervals={again:60000,hard:10*60000,good:24*60*60000,easy:4*24*60*60000};
+  const originalReview=window.reviewWordAnki;
+  if(typeof originalReview==='function'&&!originalReview.__practiceCoreReviewWrapped){
+    const wrappedReview=async function(item,rating){
+      if(!isValid(item)){if(typeof toast==='function')toast('This word is outside the 8,000-word practice bank.');return;}
+      const key=keyOf(item.word),reviewStarted=Date.now();
+      await originalReview(item,rating);
+      const savedItem=state.vocab.find(function(entry){return keyOf(entry.word)===key;});
+      if(savedItem&&intervals[rating]){
+        savedItem.dueAt=reviewStarted+intervals[rating];
+        savedItem.lastReviewAt=Math.max(savedItem.lastReviewAt||0,reviewStarted);
+        await save();
       }
-    }catch(error){}
-  };
-  try{
-    const originalEnsureVocab=ensureVocab;
-    ensureVocab=function(term,meaning){
-      const resolved=resolve(term);
-      const item=originalEnsureVocab(term,resolved||meaning);
-      if(item&&placeholder(item.meaning)){const fixed=resolve(item.word||term);if(fixed)item.meaning=fixed;}
-      return item;
+      wordPracticeCurrentKey='';
+      if(typeof renderWordPractice==='function')renderWordPractice();
     };
-  }catch(error){}
-  setTimeout(repair,500);
-  const timer=setInterval(repair,2500);
-  setTimeout(function(){clearInterval(timer);},30000);
-})();
-</script>
-
-<script id="definition-repair-prishel">
-(function(){
-  if(window.__readingWordNormalizedRepair)return;
-  window.__readingWordNormalizedRepair=true;
-  const normalize=function(value){return String(value||'').toLowerCase().replace(/ё/g,'е').replace(/[.,!?;:()«»"…—–-]+/g,' ').replace(/\s+/g,' ').trim();};
-  const placeholder=function(value){return normalize(value)==='reading word';};
-  const resolve=function(term){
-    const key=normalize(term);
-    if(key==='пришел')return 'came; arrived';
-    try{
-      if(typeof definitionFixes!=='undefined'){
-        for(const [word,meaning] of definitionFixes.entries())if(normalize(word)===key&&meaning&&!placeholder(meaning))return meaning;
-      }
-      if(typeof readingGlosses!=='undefined'){
-        for(const word of Object.keys(readingGlosses))if(normalize(word)===key&&readingGlosses[word]&&!placeholder(readingGlosses[word]))return readingGlosses[word];
-      }
-    }catch(error){}
-    return '';
-  };
-  const repair=function(){
-    try{
-      if(typeof state==='undefined'||!state||!Array.isArray(state.vocab))return;
-      let changed=false;
-      state.vocab.forEach(function(entry){
-        if(!entry||!placeholder(entry.meaning))return;
-        const meaning=resolve(entry.word);
-        if(meaning){entry.meaning=meaning;changed=true;}
-      });
-      if(changed){
-        if(typeof save==='function')save();
-        if(typeof renderVocabulary==='function')renderVocabulary();
-        if(typeof renderWordPractice==='function')renderWordPractice();
-        if(typeof updateStats==='function')updateStats();
-      }
-    }catch(error){}
-  };
-  try{
-    const originalEnsureVocab=ensureVocab;
-    ensureVocab=function(term,meaning){
-      const item=originalEnsureVocab(term,resolve(term)||meaning);
-      if(item&&placeholder(item.meaning)){const fixed=resolve(item.word||term);if(fixed)item.meaning=fixed;}
-      return item;
-    };
-  }catch(error){}
-  setTimeout(repair,500);
-  const timer=setInterval(repair,2500);
-  setTimeout(function(){clearInterval(timer);},30000);
+    wrappedReview.__practiceCoreReviewWrapped=true;
+    window.reviewWordAnki=wrappedReview;
+  }
+  quarantineExtras();
+  setInterval(quarantineExtras,5000);
+  setTimeout(function(){if(typeof renderWordPractice==='function')renderWordPractice();},250);
 })();
 </script>
